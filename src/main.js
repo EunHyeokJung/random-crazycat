@@ -53,6 +53,9 @@ const elements = {
   chaosSummary: document.querySelector("#chaos-summary"),
   chaosReplay: document.querySelector("#chaos-replay"),
   chaosResultClose: document.querySelector("#chaos-result-close"),
+  keyboardCat: document.querySelector("#keyboard-cat"),
+  keyboardCatVideo: document.querySelector("#keyboard-cat-video"),
+  keyboardCatKey: document.querySelector("#keyboard-cat-key"),
   dogEasterEgg: document.querySelector("#dog-easter-egg"),
   dogEasterEggClose: document.querySelector("#dog-easter-egg-close"),
   jumpscare: document.querySelector("#idle-jumpscare"),
@@ -75,6 +78,47 @@ let chaosScore = 0;
 let chaosSeconds = 10;
 let chaosActive = false;
 let focusBeforeChaos = null;
+let keyboardCatIdleTimer = null;
+let keyboardCatAnimationFrame = null;
+
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+function getKeyLabel(key) {
+  if (key === " ") return "SPACE";
+  if (key === "Enter") return "ENTER";
+  if (key === "Backspace") return "⌫";
+  if (key === "Delete") return "DEL";
+  if (key === "Tab") return "TAB";
+  return key.length === 1 ? key.toUpperCase() : "TAP!";
+}
+
+function wakeKeyboardCat(event) {
+  if (
+    event.metaKey ||
+    event.ctrlKey ||
+    event.altKey ||
+    event.key === "Escape" ||
+    !elements.chaosGame.hidden
+  ) return;
+
+  elements.keyboardCatKey.textContent = getKeyLabel(event.key);
+  elements.keyboardCat.classList.remove("is-key-hit", "is-idle");
+  elements.keyboardCat.classList.add("is-typing");
+  window.cancelAnimationFrame(keyboardCatAnimationFrame);
+  keyboardCatAnimationFrame = window.requestAnimationFrame(() => {
+    elements.keyboardCat.classList.add("is-key-hit");
+  });
+
+  if (!reducedMotion.matches) void elements.keyboardCatVideo.play().catch(() => {});
+
+  window.clearTimeout(keyboardCatIdleTimer);
+  keyboardCatIdleTimer = window.setTimeout(() => {
+    elements.keyboardCatVideo.pause();
+    elements.keyboardCat.classList.remove("is-typing");
+    elements.keyboardCat.classList.add("is-idle");
+    elements.keyboardCatKey.textContent = "TYPE!";
+  }, 720);
+}
 let dogEasterEggDismissed = false;
 let lastPointerY = Number.NEGATIVE_INFINITY;
 
@@ -739,6 +783,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !elements.chaosGame.hidden) closeChaosGame();
   if (event.key === "Escape" && !elements.jumpscare.hidden) closeJumpscare();
   if (event.key === "Escape" && !elements.musicEasterEgg.hidden) closeMusicEasterEgg();
+  wakeKeyboardCat(event);
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) elements.keyboardCatVideo.pause();
 });
 
 elements.nextButton.addEventListener("click", () => {
