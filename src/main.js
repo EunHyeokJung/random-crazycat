@@ -53,6 +53,8 @@ const elements = {
   chaosSummary: document.querySelector("#chaos-summary"),
   chaosReplay: document.querySelector("#chaos-replay"),
   chaosResultClose: document.querySelector("#chaos-result-close"),
+  dogEasterEgg: document.querySelector("#dog-easter-egg"),
+  dogEasterEggClose: document.querySelector("#dog-easter-egg-close"),
   jumpscare: document.querySelector("#idle-jumpscare"),
   jumpscareClose: document.querySelector("#idle-jumpscare-close"),
   musicEasterEgg: document.querySelector("#music-easter-egg"),
@@ -73,6 +75,10 @@ let chaosScore = 0;
 let chaosSeconds = 10;
 let chaosActive = false;
 let focusBeforeChaos = null;
+let dogEasterEggDismissed = false;
+let lastPointerY = Number.NEGATIVE_INFINITY;
+
+const DOG_EASTER_EGG_EDGE = 72;
 let idleTimer = null;
 let idleTriggered = false;
 let clickCount = 0;
@@ -590,6 +596,58 @@ function closeChaosGame() {
   focusBeforeChaos?.focus?.();
 }
 
+function isAtPageBottom() {
+  return window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 4;
+}
+
+function showDogEasterEgg() {
+  if (dogEasterEggDismissed || !elements.chaosGame.hidden) return;
+  elements.dogEasterEgg.inert = false;
+  elements.dogEasterEgg.classList.add("is-visible");
+  elements.dogEasterEgg.setAttribute("aria-hidden", "false");
+}
+
+function hideDogEasterEgg() {
+  elements.dogEasterEgg.inert = true;
+  elements.dogEasterEgg.classList.remove("is-visible");
+  elements.dogEasterEgg.setAttribute("aria-hidden", "true");
+}
+
+function updateDogEasterEgg() {
+  const pointerAtEdge = lastPointerY >= window.innerHeight - DOG_EASTER_EGG_EDGE;
+
+  if (!isAtPageBottom() || !pointerAtEdge) {
+    dogEasterEggDismissed = false;
+    hideDogEasterEgg();
+    return;
+  }
+
+  showDogEasterEgg();
+}
+
+document.addEventListener("mousemove", (event) => {
+  const pointerInsideDog = elements.dogEasterEgg.contains(event.target);
+  lastPointerY = event.clientY;
+
+  if (pointerInsideDog && elements.dogEasterEgg.classList.contains("is-visible")) return;
+  updateDogEasterEgg();
+});
+
+window.addEventListener("scroll", updateDogEasterEgg, { passive: true });
+window.addEventListener("resize", updateDogEasterEgg);
+window.addEventListener("blur", hideDogEasterEgg);
+
+elements.dogEasterEggClose.addEventListener("click", () => {
+  dogEasterEggDismissed = true;
+  hideDogEasterEgg();
+  elements.dogEasterEggClose.blur();
+});
+
+elements.chaosStart.addEventListener("click", () => {
+  hideDogEasterEgg();
+  startChaosGame();
+});
+
 function primeAudio() {
   if (!audioContext) audioContext = new AudioContext();
   if (audioContext.state === "suspended") void audioContext.resume();
@@ -653,7 +711,6 @@ function closeMusicEasterEgg() {
   resetIdleTimer();
 }
 
-elements.chaosStart.addEventListener("click", startChaosGame);
 elements.chaosReplay.addEventListener("click", startChaosGame);
 elements.chaosClose.addEventListener("click", closeChaosGame);
 elements.chaosResultClose.addEventListener("click", closeChaosGame);
