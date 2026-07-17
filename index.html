@@ -236,6 +236,59 @@
         </aside>
       </main>
 
+      <section class="snack-lab" aria-labelledby="snack-title">
+        <div class="snack-heading">
+          <div>
+            <p class="kicker">CAT SNACK LAB</p>
+            <h2 id="snack-title">오늘의 간식 수사대</h2>
+            <p class="snack-lead">
+              목적을 고르면 쿠팡에서 찾기 쉬운 간식을 골라드립니다. 최종 결재권은 고양이에게 있습니다.
+            </p>
+          </div>
+          <span class="snack-stamp" aria-hidden="true">집사 승인 대기</span>
+        </div>
+
+        <div class="snack-toolbar">
+          <div class="snack-filters" aria-label="간식 추천 목적">
+            <button class="snack-filter is-active" type="button" data-snack-filter="all" aria-pressed="true">
+              전체 간식
+            </button>
+            <button class="snack-filter" type="button" data-snack-filter="hydration" aria-pressed="false">
+              수분 충전
+            </button>
+            <button class="snack-filter" type="button" data-snack-filter="dental" aria-pressed="false">
+              치아 관리
+            </button>
+            <button class="snack-filter" type="button" data-snack-filter="reward" aria-pressed="false">
+              보상 간식
+            </button>
+            <button class="snack-filter" type="button" data-snack-filter="simple" aria-pressed="false">
+              원물 간식
+            </button>
+          </div>
+          <button id="pick-snack" class="button button-snack-pick" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7h3l3 10h4l3-10h3M8 7c0-2 1.6-3.5 4-3.5S16 5 16 7M9 12h6" />
+            </svg>
+            운명의 간식 뽑기
+          </button>
+        </div>
+
+        <p id="snack-feedback" class="snack-feedback" aria-live="polite">
+          여섯 후보의 진술을 확보했습니다. 고양이의 취향에 맞춰 골라보세요.
+        </p>
+        <div id="snack-list" class="snack-list"></div>
+
+        <div class="snack-notice">
+          <strong>급여 전 확인!</strong>
+          <p>
+            간식은 주식이 아니며, 알레르기·질환·연령에 따라 맞지 않을 수 있습니다. 제품 표시사항과
+            원재료를 확인하고 처음에는 소량만 급여하세요. 가격과 재고는 쿠팡에서 달라질 수 있습니다.
+          </p>
+          <span>쿠팡 제휴 링크가 아닌 상품 검색 링크를 사용합니다.</span>
+        </div>
+      </section>
+
       <footer>
         <p>고양이는 진지합니다. 인간만 웃고 있을 뿐.</p>
         <span id="cat-total">16마리의 혼돈 보유 중</span>

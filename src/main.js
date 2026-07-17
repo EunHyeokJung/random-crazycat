@@ -18,6 +18,7 @@ import {
 } from "firebase/auth";
 import { cats } from "./cats.js";
 import { auth, db } from "./firebase.js";
+import { snackFilters, snacks } from "./snacks.js";
 
 const ADMIN_EMAIL = "silverhyeok.dev@gmail.com";
 const ZOMBIE_TRIGGER = "zombie";
@@ -59,6 +60,10 @@ const elements = {
   chaosSummary: document.querySelector("#chaos-summary"),
   chaosReplay: document.querySelector("#chaos-replay"),
   chaosResultClose: document.querySelector("#chaos-result-close"),
+  snackList: document.querySelector("#snack-list"),
+  snackFilters: document.querySelectorAll("[data-snack-filter]"),
+  snackPick: document.querySelector("#pick-snack"),
+  snackFeedback: document.querySelector("#snack-feedback"),
   colorOptions: [...document.querySelectorAll(".color-option")],
   customColor: document.querySelector("#custom-cat-color"),
   colorStatus: document.querySelector("#cat-color-status"),
@@ -90,6 +95,7 @@ let chaosScore = 0;
 let chaosSeconds = 10;
 let chaosActive = false;
 let focusBeforeChaos = null;
+let activeSnackFilter = "all";
 const CAT_COLOR_KEY = "crazy-cat-color";
 let currentColorName = "원래 색";
 
@@ -539,6 +545,99 @@ function createStatus(message, loading = false) {
   state.append(text);
   return state;
 }
+
+function getVisibleSnacks() {
+  if (activeSnackFilter === "all") return snacks;
+  return snacks.filter((snack) => snack.filters.includes(activeSnackFilter));
+}
+
+function createSnackCard(snack, selectedId = null) {
+  const article = document.createElement("article");
+  article.className = `snack-card snack-card-${snack.tone}`;
+  article.dataset.snackId = snack.id;
+
+  if (snack.id === selectedId) {
+    article.classList.add("is-picked");
+    article.setAttribute("aria-label", `오늘의 추천: ${snack.name}`);
+  }
+
+  const top = document.createElement("div");
+  top.className = "snack-card-top";
+
+  const maker = document.createElement("span");
+  maker.className = "snack-maker";
+  maker.textContent = snack.maker;
+
+  const type = document.createElement("span");
+  type.className = "snack-type";
+  type.textContent = snack.type;
+  top.append(maker, type);
+
+  const title = document.createElement("h3");
+  title.textContent = snack.name;
+
+  const description = document.createElement("p");
+  description.className = "snack-description";
+  description.textContent = snack.description;
+
+  const reason = document.createElement("p");
+  reason.className = "snack-reason";
+  reason.textContent = snack.reason;
+
+  const tags = document.createElement("div");
+  tags.className = "snack-tags";
+  snack.filters.forEach((filterId) => {
+    const filter = snackFilters.find((item) => item.id === filterId);
+    if (!filter) return;
+    const tag = document.createElement("span");
+    tag.textContent = filter.label;
+    tags.append(tag);
+  });
+
+  const link = document.createElement("a");
+  link.className = "snack-link";
+  link.href = snack.searchUrl;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.textContent = "쿠팡에서 찾아보기";
+  link.setAttribute("aria-label", `${snack.name} 쿠팡에서 찾아보기`);
+
+  article.append(top, title, description, reason, tags, link);
+  return article;
+}
+
+function renderSnacks(selectedId = null) {
+  const fragment = document.createDocumentFragment();
+  getVisibleSnacks().forEach((snack) => fragment.append(createSnackCard(snack, selectedId)));
+  elements.snackList.replaceChildren(fragment);
+}
+
+elements.snackFilters.forEach((button) => {
+  button.addEventListener("click", () => {
+    activeSnackFilter = button.dataset.snackFilter;
+    elements.snackFilters.forEach((filterButton) => {
+      const isActive = filterButton === button;
+      filterButton.classList.toggle("is-active", isActive);
+      filterButton.setAttribute("aria-pressed", String(isActive));
+    });
+
+    const filterLabel = snackFilters.find((filter) => filter.id === activeSnackFilter)?.label;
+    elements.snackFeedback.textContent =
+      activeSnackFilter === "all"
+        ? "여섯 후보의 진술을 확보했습니다. 고양이의 취향에 맞춰 골라보세요."
+        : `${filterLabel}에 어울리는 후보 ${getVisibleSnacks().length}개를 찾았습니다.`;
+    renderSnacks();
+  });
+});
+
+elements.snackPick.addEventListener("click", () => {
+  const candidates = getVisibleSnacks();
+  const picked = candidates[Math.floor(Math.random() * candidates.length)];
+  renderSnacks(picked.id);
+  elements.snackFeedback.textContent = `오늘의 간식은 “${picked.name}”입니다. 집사님의 성분표 검토를 시작하세요!`;
+  const pickedCard = elements.snackList.querySelector(`[data-snack-id="${picked.id}"]`);
+  pickedCard?.scrollIntoView({ behavior: "smooth", block: "center" });
+});
 
 function getRoamingBounds() {
   const catSize = roamingCatState.cat?.offsetWidth || 112;
@@ -1493,6 +1592,7 @@ window.addEventListener("resize", () => {
 
 createGravityCat();
 elements.catTotal.textContent = `${cats.length}마리의 혼돈 보유 중`;
+renderSnacks();
 restoreCatColor();
 showCat(getInitialCat());
 
