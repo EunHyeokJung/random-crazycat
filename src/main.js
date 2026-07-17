@@ -52,6 +52,7 @@ const elements = {
   chaosSummary: document.querySelector("#chaos-summary"),
   chaosReplay: document.querySelector("#chaos-replay"),
   chaosResultClose: document.querySelector("#chaos-result-close"),
+  dogEasterEgg: document.querySelector("#dog-easter-egg"),
 };
 
 let currentCat = null;
@@ -67,6 +68,36 @@ let chaosScore = 0;
 let chaosSeconds = 10;
 let chaosActive = false;
 let focusBeforeChaos = null;
+let dogPointerY = -1;
+let dogWasInTriggerZone = false;
+
+const DOG_TRIGGER_HEIGHT = 80;
+const DOG_TRIGGER_RESET_HEIGHT = 120;
+
+function isPageAtBottom() {
+  return window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+}
+
+function hideDogEasterEgg() {
+  elements.dogEasterEgg.classList.remove("is-visible");
+}
+
+function updateDogEasterEgg() {
+  const atBottom = isPageAtBottom();
+  const inTriggerZone = dogPointerY >= window.innerHeight - DOG_TRIGGER_HEIGHT;
+  const leftTriggerZone = dogPointerY < window.innerHeight - DOG_TRIGGER_RESET_HEIGHT;
+
+  if (!atBottom || leftTriggerZone) {
+    hideDogEasterEgg();
+    dogWasInTriggerZone = false;
+    return;
+  }
+
+  if (inTriggerZone && !dogWasInTriggerZone && !chaosActive) {
+    elements.dogEasterEgg.classList.add("is-visible");
+    dogWasInTriggerZone = true;
+  }
+}
 
 function getInitialCat() {
   const serverSelectedId = document.querySelector('meta[name="selected-cat"]')?.content;
@@ -455,6 +486,15 @@ elements.chaosResultClose.addEventListener("click", closeChaosGame);
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !elements.chaosGame.hidden) closeChaosGame();
 });
+
+document.addEventListener("pointermove", (event) => {
+  if (event.pointerType && event.pointerType !== "mouse") return;
+  dogPointerY = event.clientY;
+  updateDogEasterEgg();
+});
+
+window.addEventListener("scroll", updateDogEasterEgg, { passive: true });
+window.addEventListener("resize", updateDogEasterEgg);
 
 elements.nextButton.addEventListener("click", () => {
   showCat(getRandomCat(currentCat.id));
