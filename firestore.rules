@@ -1,0 +1,47 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isKnownPhoto(photoId) {
+      return photoId in [
+        'rocket-tabby',
+        'cucumber-shock',
+        'confetti-sprint',
+        'box-overflow',
+        'laundry-launch',
+        'megaphone-tuxedo',
+        'food-cover-bandit',
+        'piano-panther',
+        'toilet-paper-sprint',
+        'robot-vacuum-captain',
+        'curtain-climber',
+        'fridge-bandit',
+        'printer-overlord',
+        'plant-pot-kitten',
+        'faucet-fighter',
+        'shoe-avalanche'
+      ];
+    }
+
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email == 'silverhyeok.dev@gmail.com';
+    }
+
+    match /photos/{photoId}/comments/{commentId} {
+      allow read: if isKnownPhoto(photoId);
+      allow create: if isKnownPhoto(photoId)
+        && request.resource.data.keys().hasOnly(['nickname', 'message', 'createdAt'])
+        && request.resource.data.nickname is string
+        && request.resource.data.nickname.size() >= 1
+        && request.resource.data.nickname.size() <= 20
+        && request.resource.data.message is string
+        && request.resource.data.message.size() >= 1
+        && request.resource.data.message.size() <= 200
+        && request.resource.data.createdAt == request.time;
+      allow delete: if isKnownPhoto(photoId) && isAdmin();
+      allow update: if false;
+    }
+  }
+}

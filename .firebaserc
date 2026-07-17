@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "mullohagi-652c3"
+  },
+  "targets": {
+    "mullohagi-652c3": {
+      "hosting": {
+        "random-crazycat": [
+          "random-crazycat"
+        ]
+      }
+    }
+  }
+}

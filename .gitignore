@@ -1,0 +1,8 @@
+node_modules/
+dist/
+tmp/
+functions/generated/
+.firebase/
+.env.local
+.env.*.local
+.DS_Store

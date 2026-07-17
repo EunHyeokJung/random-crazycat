@@ -1,0 +1,27 @@
+{
+  "name": "radom-crazycat",
+  "version": "1.0.0",
+  "private": true,
+  "description": "랜덤 고양이 사진과 사진별 Firestore 방명록",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "firebase:config": "node scripts/write-firebase-env.mjs",
+    "prepare:functions": "node scripts/prepare-functions.mjs",
+    "preview": "vite preview",
+    "firebase:login": "npx firebase-tools login",
+    "deploy:rules": "npx firebase-tools deploy --only firestore:rules",
+    "deploy": "npm run build && npx firebase-tools deploy --config firebase.hosting.json --only firestore,hosting",
+    "deploy:dynamic-preview": "npm run build && npm run prepare:functions && npx firebase-tools deploy --only firestore,functions,hosting"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "firebase": "^12.16.0"
+  },
+  "devDependencies": {
+    "vite": "^8.1.5"
+  }
+}
