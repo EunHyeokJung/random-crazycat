@@ -632,6 +632,70 @@ footer p {
   margin: 0;
 }
 
+.hamster-roamer {
+  --hamster-duration: 0ms;
+  --hamster-x: 16px;
+  --hamster-y: 96px;
+  position: fixed;
+  z-index: 70;
+  top: 0;
+  left: 0;
+  width: clamp(78px, 9vw, 108px);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate3d(var(--hamster-x), var(--hamster-y), 0);
+  transition:
+    opacity 220ms ease,
+    transform var(--hamster-duration) linear;
+  will-change: transform;
+}
+
+.hamster-roamer.is-visible {
+  opacity: 1;
+}
+
+.hamster-roamer__portrait {
+  overflow: hidden;
+  aspect-ratio: 1;
+  border: var(--line);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 5px 5px 0 var(--ink);
+  animation: hamster-waddle 520ms ease-in-out infinite alternate;
+}
+
+.hamster-roamer img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center bottom;
+  transition: transform 180ms ease;
+}
+
+.hamster-roamer.is-facing-left img {
+  transform: scaleX(-1);
+}
+
+.hamster-roamer__speech {
+  position: absolute;
+  z-index: 1;
+  top: -20px;
+  right: -20px;
+  padding: 5px 8px;
+  border: 2px solid var(--ink);
+  background: var(--mint);
+  box-shadow: 2px 2px 0 var(--ink);
+  font-size: clamp(0.64rem, 1.4vw, 0.76rem);
+  font-weight: 900;
+  white-space: nowrap;
+  transform: rotate(5deg);
+}
+
+body.is-playing-chaos .hamster-roamer {
+  opacity: 0;
+}
+
 body.is-playing-chaos {
   overflow: hidden;
 }
@@ -865,6 +929,15 @@ body.is-playing-chaos {
   to {
     transform: translate(calc(-50% + var(--chaos-x)), calc(-50% + var(--chaos-y)))
       rotate(var(--chaos-spin));
+  }
+}
+
+@keyframes hamster-waddle {
+  from {
+    transform: translateY(0) rotate(-2deg);
+  }
+  to {
+    transform: translateY(-5px) rotate(2deg);
   }
 }
 
