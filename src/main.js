@@ -67,6 +67,17 @@ let chaosScore = 0;
 let chaosSeconds = 10;
 let chaosActive = false;
 let focusBeforeChaos = null;
+let roamingMoveTimer = null;
+let roamingPressTimer = null;
+let roamingIsHome = window.localStorage.getItem("roaming-cat-home") === "true";
+
+const roamingCatState = {
+  cat: null,
+  image: null,
+  home: null,
+  x: 0,
+  y: 0,
+};
 
 function getInitialCat() {
   const serverSelectedId = document.querySelector('meta[name="selected-cat"]')?.content;
@@ -331,6 +342,124 @@ function createStatus(message, loading = false) {
   return state;
 }
 
+function getRoamingBounds() {
+  const catSize = roamingCatState.cat?.offsetWidth || 112;
+  const padding = 18;
+  return {
+    maxX: Math.max(padding, window.innerWidth - catSize - padding),
+    maxY: Math.max(padding + 72, window.innerHeight - catSize - padding),
+    minX: padding,
+    minY: padding + 72,
+  };
+}
+
+function pickRoamingCatImage() {
+  const cat = cats[Math.floor(Math.random() * cats.length)];
+  roamingCatState.image.src = cat.image;
+  roamingCatState.image.alt = "";
+}
+
+function placeRoamingCat({ instant = false } = {}) {
+  if (!roamingCatState.cat || roamingIsHome) return;
+
+  const bounds = getRoamingBounds();
+  const nextX = bounds.minX + Math.random() * (bounds.maxX - bounds.minX);
+  const nextY = bounds.minY + Math.random() * (bounds.maxY - bounds.minY);
+  const direction = nextX >= roamingCatState.x ? 1 : -1;
+  const rotation = -9 + Math.random() * 18;
+
+  roamingCatState.x = nextX;
+  roamingCatState.y = nextY;
+  roamingCatState.cat.style.setProperty("--roaming-x", `${nextX}px`);
+  roamingCatState.cat.style.setProperty("--roaming-y", `${nextY}px`);
+  roamingCatState.cat.style.setProperty("--roaming-direction", direction);
+  roamingCatState.cat.style.setProperty("--roaming-rotate", `${rotation}deg`);
+  roamingCatState.cat.classList.toggle("is-instant", instant);
+}
+
+function scheduleRoamingCat() {
+  window.clearInterval(roamingMoveTimer);
+  if (roamingIsHome) return;
+
+  roamingMoveTimer = window.setInterval(() => {
+    if (Math.random() > 0.72) pickRoamingCatImage();
+    placeRoamingCat();
+  }, 2200);
+}
+
+function setRoamingCatHome(isHome) {
+  roamingIsHome = isHome;
+  window.localStorage.setItem("roaming-cat-home", String(isHome));
+  roamingCatState.cat.classList.toggle("is-home", isHome);
+  roamingCatState.home.classList.toggle("is-waiting", isHome);
+  roamingCatState.home.setAttribute(
+    "aria-label",
+    isHome ? "Call roaming cat out of the house" : "Roaming cat house",
+  );
+
+  if (isHome) {
+    window.clearInterval(roamingMoveTimer);
+    window.clearTimeout(roamingPressTimer);
+    return;
+  }
+
+  pickRoamingCatImage();
+  placeRoamingCat({ instant: true });
+  window.requestAnimationFrame(() => roamingCatState.cat.classList.remove("is-instant"));
+  scheduleRoamingCat();
+}
+
+function createRoamingCat() {
+  const catButton = document.createElement("button");
+  catButton.className = "roaming-cat";
+  catButton.type = "button";
+  catButton.setAttribute("aria-label", "Hold to send the roaming cat home");
+
+  const image = document.createElement("img");
+  image.width = 132;
+  image.height = 132;
+  image.draggable = false;
+  catButton.append(image);
+
+  const homeButton = document.createElement("button");
+  homeButton.className = "cat-home-toggle";
+  homeButton.type = "button";
+  homeButton.innerHTML = `
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M7 24 24 10l17 14" />
+      <path d="M13 22v18h22V22" />
+      <path d="M20 40V29h8v11" />
+    </svg>
+  `;
+
+  roamingCatState.cat = catButton;
+  roamingCatState.image = image;
+  roamingCatState.home = homeButton;
+  document.body.append(catButton, homeButton);
+
+  catButton.addEventListener("pointerdown", () => {
+    if (roamingIsHome) return;
+    window.clearTimeout(roamingPressTimer);
+    catButton.classList.add("is-pressing");
+    roamingPressTimer = window.setTimeout(() => setRoamingCatHome(true), 620);
+  });
+
+  ["pointerup", "pointerleave", "pointercancel", "lostpointercapture"].forEach((eventName) => {
+    catButton.addEventListener(eventName, () => {
+      window.clearTimeout(roamingPressTimer);
+      catButton.classList.remove("is-pressing");
+    });
+  });
+
+  homeButton.addEventListener("click", () => {
+    if (roamingIsHome) setRoamingCatHome(false);
+  });
+
+  window.addEventListener("resize", () => placeRoamingCat({ instant: true }));
+  pickRoamingCatImage();
+  setRoamingCatHome(roamingIsHome);
+}
+
 function positionChaosCat(target) {
   const compact = window.matchMedia("(max-width: 560px)").matches;
   target.style.left = `${16 + Math.random() * 68}%`;
@@ -525,3 +654,4 @@ window.addEventListener("popstate", () => showCat(getInitialCat(), { updateUrl: 
 
 elements.catTotal.textContent = `${cats.length}마리의 혼돈 보유 중`;
 showCat(getInitialCat());
+createRoamingCat();
