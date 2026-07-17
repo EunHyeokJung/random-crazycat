@@ -20,6 +20,7 @@ import { cats } from "./cats.js";
 import { auth, db } from "./firebase.js";
 
 const ADMIN_EMAIL = "silverhyeok.dev@gmail.com";
+const ZOMBIE_TRIGGER = "zombie";
 const HEARTED_CATS_KEY = "crazycat:hearted-cats";
 
 const elements = {
@@ -44,6 +45,8 @@ const elements = {
   adminAuth: document.querySelector("#admin-auth"),
   authStatus: document.querySelector("#auth-status"),
   guestbookFeedback: document.querySelector("#guestbook-feedback"),
+  zombieSurprise: document.querySelector("#zombie-surprise"),
+  zombieSurpriseClose: document.querySelector("#zombie-surprise-close"),
   chaosStart: document.querySelector("#chaos-game-start"),
   chaosGame: document.querySelector("#chaos-game"),
   chaosClose: document.querySelector("#chaos-game-close"),
@@ -83,6 +86,8 @@ let chaosScore = 0;
 let chaosSeconds = 10;
 let chaosActive = false;
 let focusBeforeChaos = null;
+let zombieTimer = null;
+let focusBeforeZombie = null;
 let gravityCatCooldown = false;
 let catWalkCooldown = false;
 let catWalkActive = false;
@@ -1146,7 +1151,38 @@ document.addEventListener(
   { capture: true },
 );
 
+function closeZombieSurprise() {
+  window.clearTimeout(zombieTimer);
+  elements.zombieSurprise.classList.remove("is-visible");
+  document.body.classList.remove("is-showing-zombie");
+
+  window.setTimeout(() => {
+    elements.zombieSurprise.hidden = true;
+    focusBeforeZombie?.focus?.();
+  }, 180);
+}
+
+function showZombieSurprise() {
+  window.clearTimeout(zombieTimer);
+  focusBeforeZombie = document.activeElement;
+  elements.zombieSurprise.hidden = false;
+  document.body.classList.add("is-showing-zombie");
+
+  window.requestAnimationFrame(() => {
+    elements.zombieSurprise.classList.add("is-visible");
+    elements.zombieSurpriseClose.focus();
+  });
+
+  zombieTimer = window.setTimeout(closeZombieSurprise, 2400);
+}
+
+elements.zombieSurpriseClose.addEventListener("click", closeZombieSurprise);
+
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !elements.zombieSurprise.hidden) {
+    closeZombieSurprise();
+    return;
+  }
   if (event.key === "Escape" && !elements.chaosGame.hidden) closeChaosGame();
   if (event.key === "Escape" && !elements.jumpscare.hidden) closeJumpscare();
   if (event.key === "Escape" && !elements.musicEasterEgg.hidden) closeMusicEasterEgg();
@@ -1270,6 +1306,9 @@ elements.form.addEventListener("submit", async (event) => {
     elements.message.value = "";
     elements.messageCount.textContent = "0 / 200";
     elements.formFeedback.textContent = "방명록을 남겼습니다!";
+    if (nickname === ZOMBIE_TRIGGER && message === ZOMBIE_TRIGGER) {
+      showZombieSurprise();
+    }
   } catch (error) {
     console.error("Firestore submit error:", error);
     elements.formFeedback.textContent = "저장하지 못했습니다. Firestore 연결을 확인해주세요.";
