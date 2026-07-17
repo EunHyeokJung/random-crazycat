@@ -182,6 +182,26 @@
     </div>
 
     <section
+      id="zombie-surprise"
+      class="zombie-surprise"
+      role="dialog"
+      aria-modal="true"
+      aria-label="좀비 깜짝 등장"
+      hidden
+    >
+      <button id="zombie-surprise-close" type="button" aria-label="좀비 화면 닫기">
+        <img
+          src="/zombie-surprise.webp"
+          alt="어둠 속에서 갑자기 가까이 나타난 좀비"
+          width="1535"
+          height="1024"
+          fetchpriority="high"
+        />
+        <span aria-hidden="true">ZOMBIE!</span>
+      </button>
+    </section>
+
+    <section
       id="chaos-game"
       class="chaos-game"
       role="dialog"
