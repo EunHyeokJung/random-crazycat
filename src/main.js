@@ -20,15 +20,18 @@ import { cats } from "./cats.js";
 import { auth, db } from "./firebase.js";
 
 const ADMIN_EMAIL = "silverhyeok.dev@gmail.com";
+const HEARTED_CATS_KEY = "crazycat:hearted-cats";
 
 const elements = {
   title: document.querySelector("#cat-title"),
   number: document.querySelector("#cat-number"),
   photo: document.querySelector("#cat-photo"),
+  heartButton: document.querySelector("#heart-cat"),
   sticker: document.querySelector("#cat-sticker"),
   caption: document.querySelector("#cat-caption"),
   nextButton: document.querySelector("#next-cat"),
   shareButton: document.querySelector("#share-cat"),
+  downloadButton: document.querySelector("#download-cat"),
   shareFeedback: document.querySelector("#share-feedback"),
   form: document.querySelector("#comment-form"),
   nickname: document.querySelector("#nickname"),
@@ -54,6 +57,16 @@ const elements = {
   chaosResultClose: document.querySelector("#chaos-result-close"),
   fireworksCanvas: document.querySelector("#fireworks-easter-egg"),
   fireworksTrigger: document.querySelector("#fireworks-easter-trigger"),
+  keyboardCat: document.querySelector("#keyboard-cat"),
+  keyboardCatVideo: document.querySelector("#keyboard-cat-video"),
+  keyboardCatKey: document.querySelector("#keyboard-cat-key"),
+  dogEasterEgg: document.querySelector("#dog-easter-egg"),
+  dogEasterEggClose: document.querySelector("#dog-easter-egg-close"),
+  jumpscare: document.querySelector("#idle-jumpscare"),
+  jumpscareClose: document.querySelector("#idle-jumpscare-close"),
+  musicEasterEgg: document.querySelector("#music-easter-egg"),
+  musicClose: document.querySelector("#music-easter-egg-close"),
+  musicFrame: document.querySelector("#music-easter-egg-frame"),
 };
 
 let currentCat = null;
@@ -69,6 +82,125 @@ let chaosScore = 0;
 let chaosSeconds = 10;
 let chaosActive = false;
 let focusBeforeChaos = null;
+let gravityCatCooldown = false;
+let catWalkCooldown = false;
+let catWalkActive = false;
+let catWalkTarget = null;
+let keyboardCatIdleTimer = null;
+let keyboardCatAnimationFrame = null;
+
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+function getKeyLabel(key) {
+  if (key === " ") return "SPACE";
+  if (key === "Enter") return "ENTER";
+  if (key === "Backspace") return "⌫";
+  if (key === "Delete") return "DEL";
+  if (key === "Tab") return "TAB";
+  return key.length === 1 ? key.toUpperCase() : "TAP!";
+}
+
+function wakeKeyboardCat(event) {
+  if (
+    event.metaKey ||
+    event.ctrlKey ||
+    event.altKey ||
+    event.key === "Escape" ||
+    !elements.chaosGame.hidden
+  ) return;
+
+  elements.keyboardCatKey.textContent = getKeyLabel(event.key);
+  elements.keyboardCat.classList.remove("is-key-hit", "is-idle");
+  elements.keyboardCat.classList.add("is-typing");
+  window.cancelAnimationFrame(keyboardCatAnimationFrame);
+  keyboardCatAnimationFrame = window.requestAnimationFrame(() => {
+    elements.keyboardCat.classList.add("is-key-hit");
+  });
+
+  if (!reducedMotion.matches) void elements.keyboardCatVideo.play().catch(() => {});
+
+  window.clearTimeout(keyboardCatIdleTimer);
+  keyboardCatIdleTimer = window.setTimeout(() => {
+    elements.keyboardCatVideo.pause();
+    elements.keyboardCat.classList.remove("is-typing");
+    elements.keyboardCat.classList.add("is-idle");
+    elements.keyboardCatKey.textContent = "TYPE!";
+  }, 720);
+}
+let dogEasterEggDismissed = false;
+let lastPointerY = Number.NEGATIVE_INFINITY;
+
+const DOG_EASTER_EGG_EDGE = 72;
+let idleTimer = null;
+let idleTriggered = false;
+let clickCount = 0;
+let audioContext = null;
+let focusBeforeEasterEgg = null;
+
+const IDLE_DELAY = 10_000;
+const MUSIC_VIDEO_URL = "https://www.youtube.com/embed/0tOXxuLcaog?autoplay=1&rel=0";
+let roamingMoveTimer = null;
+let roamingPressTimer = null;
+let roamingIsHome = window.localStorage.getItem("roaming-cat-home") === "true";
+
+const roamingCatState = {
+  cat: null,
+  image: null,
+  home: null,
+  x: 0,
+  y: 0,
+};
+
+function getHeartedCats() {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(HEARTED_CATS_KEY) || "[]");
+    return new Set(Array.isArray(saved) ? saved : []);
+  } catch (error) {
+    console.warn("Could not read hearted cats:", error);
+    return new Set();
+  }
+}
+
+function saveHeartedCats(heartedCats) {
+  try {
+    window.localStorage.setItem(HEARTED_CATS_KEY, JSON.stringify([...heartedCats]));
+  } catch (error) {
+    console.warn("Could not save hearted cats:", error);
+  }
+}
+
+function isCatHearted(catId) {
+  return getHeartedCats().has(catId);
+}
+
+function setHeartUi(isHearted) {
+  elements.heartButton.classList.toggle("is-hearted", isHearted);
+  elements.heartButton.setAttribute("aria-pressed", String(isHearted));
+  elements.heartButton.setAttribute(
+    "aria-label",
+    isHearted ? "Unlike this cat" : "Like this cat",
+  );
+}
+
+function toggleCatHeart() {
+  if (!currentCat) return;
+
+  const heartedCats = getHeartedCats();
+  const nextHearted = !heartedCats.has(currentCat.id);
+
+  if (nextHearted) {
+    heartedCats.add(currentCat.id);
+  } else {
+    heartedCats.delete(currentCat.id);
+  }
+
+  saveHeartedCats(heartedCats);
+  setHeartUi(nextHearted);
+
+  elements.heartButton.classList.remove("is-popping");
+  void elements.heartButton.offsetWidth;
+  elements.heartButton.classList.add("is-popping");
+}
 
 function getInitialCat() {
   const serverSelectedId = document.querySelector('meta[name="selected-cat"]')?.content;
@@ -101,6 +233,7 @@ function showCat(cat, { updateUrl = true } = {}) {
   elements.number.setAttribute("aria-label", `${cats.length}마리 중 ${catIndex}번째 고양이`);
   elements.sticker.textContent = cat.sticker;
   elements.caption.textContent = cat.caption;
+  setHeartUi(isCatHearted(cat.id));
   elements.shareFeedback.textContent = "";
   elements.formFeedback.textContent = "";
   elements.guestbookFeedback.textContent = "";
@@ -333,6 +466,124 @@ function createStatus(message, loading = false) {
   return state;
 }
 
+function getRoamingBounds() {
+  const catSize = roamingCatState.cat?.offsetWidth || 112;
+  const padding = 18;
+  return {
+    maxX: Math.max(padding, window.innerWidth - catSize - padding),
+    maxY: Math.max(padding + 72, window.innerHeight - catSize - padding),
+    minX: padding,
+    minY: padding + 72,
+  };
+}
+
+function pickRoamingCatImage() {
+  const cat = cats[Math.floor(Math.random() * cats.length)];
+  roamingCatState.image.src = cat.image;
+  roamingCatState.image.alt = "";
+}
+
+function placeRoamingCat({ instant = false } = {}) {
+  if (!roamingCatState.cat || roamingIsHome) return;
+
+  const bounds = getRoamingBounds();
+  const nextX = bounds.minX + Math.random() * (bounds.maxX - bounds.minX);
+  const nextY = bounds.minY + Math.random() * (bounds.maxY - bounds.minY);
+  const direction = nextX >= roamingCatState.x ? 1 : -1;
+  const rotation = -9 + Math.random() * 18;
+
+  roamingCatState.x = nextX;
+  roamingCatState.y = nextY;
+  roamingCatState.cat.style.setProperty("--roaming-x", `${nextX}px`);
+  roamingCatState.cat.style.setProperty("--roaming-y", `${nextY}px`);
+  roamingCatState.cat.style.setProperty("--roaming-direction", direction);
+  roamingCatState.cat.style.setProperty("--roaming-rotate", `${rotation}deg`);
+  roamingCatState.cat.classList.toggle("is-instant", instant);
+}
+
+function scheduleRoamingCat() {
+  window.clearInterval(roamingMoveTimer);
+  if (roamingIsHome) return;
+
+  roamingMoveTimer = window.setInterval(() => {
+    if (Math.random() > 0.72) pickRoamingCatImage();
+    placeRoamingCat();
+  }, 2200);
+}
+
+function setRoamingCatHome(isHome) {
+  roamingIsHome = isHome;
+  window.localStorage.setItem("roaming-cat-home", String(isHome));
+  roamingCatState.cat.classList.toggle("is-home", isHome);
+  roamingCatState.home.classList.toggle("is-waiting", isHome);
+  roamingCatState.home.setAttribute(
+    "aria-label",
+    isHome ? "Call roaming cat out of the house" : "Roaming cat house",
+  );
+
+  if (isHome) {
+    window.clearInterval(roamingMoveTimer);
+    window.clearTimeout(roamingPressTimer);
+    return;
+  }
+
+  pickRoamingCatImage();
+  placeRoamingCat({ instant: true });
+  window.requestAnimationFrame(() => roamingCatState.cat.classList.remove("is-instant"));
+  scheduleRoamingCat();
+}
+
+function createRoamingCat() {
+  const catButton = document.createElement("button");
+  catButton.className = "roaming-cat";
+  catButton.type = "button";
+  catButton.setAttribute("aria-label", "Hold to send the roaming cat home");
+
+  const image = document.createElement("img");
+  image.width = 132;
+  image.height = 132;
+  image.draggable = false;
+  catButton.append(image);
+
+  const homeButton = document.createElement("button");
+  homeButton.className = "cat-home-toggle";
+  homeButton.type = "button";
+  homeButton.innerHTML = `
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M7 24 24 10l17 14" />
+      <path d="M13 22v18h22V22" />
+      <path d="M20 40V29h8v11" />
+    </svg>
+  `;
+
+  roamingCatState.cat = catButton;
+  roamingCatState.image = image;
+  roamingCatState.home = homeButton;
+  document.body.append(catButton, homeButton);
+
+  catButton.addEventListener("pointerdown", () => {
+    if (roamingIsHome) return;
+    window.clearTimeout(roamingPressTimer);
+    catButton.classList.add("is-pressing");
+    roamingPressTimer = window.setTimeout(() => setRoamingCatHome(true), 620);
+  });
+
+  ["pointerup", "pointerleave", "pointercancel", "lostpointercapture"].forEach((eventName) => {
+    catButton.addEventListener(eventName, () => {
+      window.clearTimeout(roamingPressTimer);
+      catButton.classList.remove("is-pressing");
+    });
+  });
+
+  homeButton.addEventListener("click", () => {
+    if (roamingIsHome) setRoamingCatHome(false);
+  });
+
+  window.addEventListener("resize", () => placeRoamingCat({ instant: true }));
+  pickRoamingCatImage();
+  setRoamingCatHome(roamingIsHome);
+}
+
 function positionChaosCat(target) {
   const compact = window.matchMedia("(max-width: 560px)").matches;
   target.style.left = `${16 + Math.random() * 68}%`;
@@ -419,6 +670,7 @@ function startChaosGame() {
   chaosScore = 0;
   chaosSeconds = 10;
   chaosActive = true;
+  syncFireworksEasterEgg();
   elements.chaosScore.textContent = "0";
   elements.chaosTime.textContent = "10";
   elements.chaosResult.hidden = true;
@@ -446,16 +698,445 @@ function closeChaosGame() {
   elements.chaosResult.hidden = true;
   elements.chaosGame.hidden = true;
   document.body.classList.remove("is-playing-chaos");
+  syncFireworksEasterEgg();
   focusBeforeChaos?.focus?.();
 }
 
-elements.chaosStart.addEventListener("click", startChaosGame);
+function createGravityCat() {
+  const cat = document.createElement("button");
+  cat.className = "gravity-cat";
+  cat.type = "button";
+  cat.setAttribute("aria-label", "The Gravity Cat");
+  cat.innerHTML = `
+    <span class="gravity-cat-ear gravity-cat-ear-left" aria-hidden="true"></span>
+    <span class="gravity-cat-ear gravity-cat-ear-right" aria-hidden="true"></span>
+    <span class="gravity-cat-face" aria-hidden="true">
+      <span class="gravity-cat-eye"></span>
+      <span class="gravity-cat-eye"></span>
+      <span class="gravity-cat-mouth"></span>
+    </span>
+    <span class="gravity-cat-paw" aria-hidden="true"></span>
+  `;
+  cat.addEventListener("pointerenter", () => knockRandomElement());
+  cat.addEventListener("click", () => knockRandomElement(true));
+  document.body.append(cat);
+}
+
+function getGravityTargets() {
+  return [
+    document.querySelector(".brand"),
+    elements.adminAuth,
+    elements.nextButton,
+    elements.shareButton,
+    elements.chaosStart,
+  ].filter((target) => target && !target.dataset.gravityFalling);
+}
+
+function knockRandomElement(force = false) {
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (prefersReducedMotion || (gravityCatCooldown && !force)) return;
+
+  const targets = getGravityTargets();
+  if (targets.length === 0) return;
+
+  gravityCatCooldown = true;
+  const target = targets[Math.floor(Math.random() * targets.length)];
+  dropElement(target);
+  window.setTimeout(() => {
+    gravityCatCooldown = false;
+  }, 1100);
+}
+
+function dropElement(target) {
+  const rect = target.getBoundingClientRect();
+  const placeholder = document.createElement("span");
+  placeholder.className = "gravity-placeholder";
+  placeholder.style.width = `${rect.width}px`;
+  placeholder.style.height = `${rect.height}px`;
+  placeholder.setAttribute("aria-hidden", "true");
+  target.after(placeholder);
+
+  const original = {
+    parent: placeholder.parentElement,
+    nextSibling: placeholder.nextSibling,
+    placeholder,
+  };
+
+  target.dataset.gravityFalling = "true";
+  target.classList.add("is-gravity-loose");
+  Object.assign(target.style, {
+    position: "fixed",
+    left: `${rect.left}px`,
+    top: `${rect.top}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+    margin: "0",
+    zIndex: "90",
+  });
+  document.body.append(target);
+
+  let x = rect.left;
+  let y = rect.top;
+  let vx = (Math.random() > 0.5 ? 1 : -1) * (1.8 + Math.random() * 2.4);
+  let vy = -3 - Math.random() * 3;
+  let rotation = -10 + Math.random() * 20;
+  let angular = (Math.random() > 0.5 ? 1 : -1) * (4 + Math.random() * 5);
+  let bounces = 0;
+
+  function tick() {
+    if (!target.dataset.gravityFalling) return;
+    const floor = window.innerHeight - rect.height - 10;
+    const rightWall = window.innerWidth - rect.width - 6;
+    vy += 0.55;
+    x += vx;
+    y += vy;
+    rotation += angular;
+
+    if (x <= 6 || x >= rightWall) {
+      x = Math.max(6, Math.min(x, rightWall));
+      vx *= -0.72;
+      angular *= -0.75;
+    }
+
+    if (y >= floor) {
+      y = floor;
+      vy *= -0.42;
+      vx *= 0.72;
+      angular *= 0.7;
+      bounces += 1;
+    }
+
+    target.style.transform = `translate3d(0, 0, 0) rotate(${rotation}deg)`;
+    target.style.left = `${x}px`;
+    target.style.top = `${y}px`;
+
+    if (bounces < 4 || Math.abs(vy) > 1.2 || Math.abs(vx) > 0.35) {
+      window.requestAnimationFrame(tick);
+    } else {
+      makeDraggableLooseElement(target, original, { x, y, rotation });
+    }
+  }
+
+  window.requestAnimationFrame(tick);
+}
+
+function makeDraggableLooseElement(target, original, state) {
+  target.classList.add("is-gravity-draggable");
+  target.title = "Drag me back to my spot";
+
+  const onPointerDown = (event) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    target.setPointerCapture(event.pointerId);
+    const rect = target.getBoundingClientRect();
+    const offsetX = event.clientX - rect.left;
+    const offsetY = event.clientY - rect.top;
+    let lastX = rect.left;
+    let lastY = rect.top;
+
+    const onPointerMove = (moveEvent) => {
+      lastX = moveEvent.clientX - offsetX;
+      lastY = moveEvent.clientY - offsetY;
+      target.style.left = `${lastX}px`;
+      target.style.top = `${lastY}px`;
+      target.style.transform = `rotate(${state.rotation * 0.45}deg)`;
+    };
+
+    const onPointerUp = () => {
+      target.releasePointerCapture(event.pointerId);
+      target.removeEventListener("pointermove", onPointerMove);
+      target.removeEventListener("pointerup", onPointerUp);
+      const slot = original.placeholder.getBoundingClientRect();
+      const current = target.getBoundingClientRect();
+      const closeEnough =
+        Math.abs(current.left - slot.left) < 72 && Math.abs(current.top - slot.top) < 72;
+
+      if (closeEnough) {
+        restoreGravityElement(target, original);
+      } else {
+        state.x = lastX;
+        state.y = lastY;
+      }
+    };
+
+    target.addEventListener("pointermove", onPointerMove);
+    target.addEventListener("pointerup", onPointerUp);
+  };
+
+  target.addEventListener("pointerdown", onPointerDown);
+  target.gravityPointerDown = onPointerDown;
+}
+
+function restoreGravityElement(target, original) {
+  target.classList.remove("is-gravity-loose", "is-gravity-draggable");
+  target.removeAttribute("title");
+  delete target.dataset.gravityFalling;
+  if (target.gravityPointerDown) {
+    target.removeEventListener("pointerdown", target.gravityPointerDown);
+    delete target.gravityPointerDown;
+  }
+  target.removeAttribute("style");
+
+  if (original.nextSibling?.parentElement === original.parent) {
+    original.parent.insertBefore(target, original.nextSibling);
+  } else {
+    original.parent.append(target);
+  }
+
+  original.placeholder.remove();
+  target.animate(
+    [
+      { transform: "translateY(-10px) rotate(-3deg)" },
+      { transform: "translateY(0) rotate(0deg)" },
+    ],
+    { duration: 260, easing: "cubic-bezier(.2,.9,.2,1)" },
+  );
+}
+
+function createCatWalkLayer() {
+  const layer = document.createElement("div");
+  layer.className = "cat-walk-layer";
+  layer.setAttribute("aria-hidden", "true");
+  layer.innerHTML = `
+    <div class="cat-walk-silhouette">
+      <span class="cat-walk-tail"></span>
+      <span class="cat-walk-body"></span>
+      <span class="cat-walk-head"></span>
+      <span class="cat-walk-leg cat-walk-leg-one"></span>
+      <span class="cat-walk-leg cat-walk-leg-two"></span>
+    </div>
+  `;
+  document.body.append(layer);
+  return layer;
+}
+
+function getCatWalkText() {
+  const syllables = ["Meow", "Yowl", "mrrp", "myo", "eww", "mm", "rowl"];
+  const count = 2 + Math.floor(Math.random() * 4);
+  let text = "";
+  for (let index = 0; index < count; index += 1) {
+    text += syllables[Math.floor(Math.random() * syllables.length)];
+  }
+  return text.replace(/[A-Z]/g, (letter) => (Math.random() > 0.45 ? letter.toLowerCase() : letter));
+}
+
+function insertCatWalkText(input, text) {
+  const start = input.selectionStart ?? input.value.length;
+  const end = input.selectionEnd ?? start;
+  const nextValue = `${input.value.slice(0, start)}${text}${input.value.slice(end)}`;
+  const maxLength = Number(input.getAttribute("maxlength")) || nextValue.length;
+  input.value = nextValue.slice(0, maxLength);
+  const nextCaret = Math.min(start + text.length, input.value.length);
+  input.setSelectionRange?.(nextCaret, nextCaret);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function triggerCatWalk(input, force = false) {
+  if (catWalkActive || (catWalkCooldown && !force)) return;
+  if (!input.matches("input, textarea")) return;
+
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  catWalkActive = true;
+  catWalkCooldown = true;
+  catWalkTarget = input;
+  input.classList.add("is-cat-walked");
+
+  const layer = document.querySelector(".cat-walk-layer") || createCatWalkLayer();
+  const silhouette = layer.querySelector(".cat-walk-silhouette");
+  silhouette.style.animation = "none";
+  void silhouette.offsetWidth;
+  silhouette.style.animation = "";
+  layer.classList.add("is-visible");
+
+  const rect = input.getBoundingClientRect();
+  layer.style.setProperty("--cat-walk-top", `${Math.min(window.innerHeight - 92, rect.bottom - 22)}px`);
+
+  window.setTimeout(
+    () => {
+      insertCatWalkText(input, getCatWalkText());
+    },
+    prefersReducedMotion ? 20 : 720,
+  );
+
+  window.setTimeout(
+    () => {
+      layer.classList.remove("is-visible", "is-hissing");
+      input.classList.remove("is-cat-walked");
+      catWalkActive = false;
+      catWalkTarget = null;
+    },
+    prefersReducedMotion ? 120 : 1800,
+  );
+
+  window.setTimeout(() => {
+    catWalkCooldown = false;
+  }, 4200);
+}
+
+function maybeTriggerCatWalk(event) {
+  if (event.inputType?.startsWith("delete")) return;
+  if (Math.random() < 0.12) triggerCatWalk(event.currentTarget);
+}
+
+function handleCatWalkBackspace(event) {
+  if (!catWalkActive || event.key !== "Backspace" || event.currentTarget !== catWalkTarget) return;
+  if (Math.random() < 0.68) {
+    event.preventDefault();
+    const layer = document.querySelector(".cat-walk-layer");
+    layer?.classList.add("is-hissing");
+    window.setTimeout(() => layer?.classList.remove("is-hissing"), 320);
+  }
+}
+
+function isAtPageBottom() {
+  return window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 4;
+}
+
+function showDogEasterEgg() {
+  if (dogEasterEggDismissed || !elements.chaosGame.hidden) return;
+  elements.dogEasterEgg.inert = false;
+  elements.dogEasterEgg.classList.add("is-visible");
+  elements.dogEasterEgg.setAttribute("aria-hidden", "false");
+}
+
+function hideDogEasterEgg() {
+  elements.dogEasterEgg.inert = true;
+  elements.dogEasterEgg.classList.remove("is-visible");
+  elements.dogEasterEgg.setAttribute("aria-hidden", "true");
+}
+
+function updateDogEasterEgg() {
+  const pointerAtEdge = lastPointerY >= window.innerHeight - DOG_EASTER_EGG_EDGE;
+
+  if (!isAtPageBottom() || !pointerAtEdge) {
+    dogEasterEggDismissed = false;
+    hideDogEasterEgg();
+    return;
+  }
+
+  showDogEasterEgg();
+}
+
+document.addEventListener("mousemove", (event) => {
+  const pointerInsideDog = elements.dogEasterEgg.contains(event.target);
+  lastPointerY = event.clientY;
+
+  if (pointerInsideDog && elements.dogEasterEgg.classList.contains("is-visible")) return;
+  updateDogEasterEgg();
+});
+
+window.addEventListener("scroll", updateDogEasterEgg, { passive: true });
+window.addEventListener("resize", updateDogEasterEgg);
+window.addEventListener("blur", hideDogEasterEgg);
+
+elements.dogEasterEggClose.addEventListener("click", () => {
+  dogEasterEggDismissed = true;
+  hideDogEasterEgg();
+  elements.dogEasterEggClose.blur();
+});
+
+elements.chaosStart.addEventListener("click", () => {
+  hideDogEasterEgg();
+  startChaosGame();
+});
+
+function primeAudio() {
+  if (!audioContext) audioContext = new AudioContext();
+  if (audioContext.state === "suspended") void audioContext.resume();
+}
+
+function playScream() {
+  if (!audioContext || audioContext.state !== "running") return;
+
+  const now = audioContext.currentTime;
+  const oscillator = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  oscillator.type = "sawtooth";
+  oscillator.frequency.setValueAtTime(280, now);
+  oscillator.frequency.exponentialRampToValueAtTime(1450, now + 0.65);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.22, now + 0.05);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.72);
+  oscillator.connect(gain).connect(audioContext.destination);
+  oscillator.start(now);
+  oscillator.stop(now + 0.75);
+}
+
+function showJumpscare() {
+  if (idleTriggered || !elements.jumpscare.hidden) return;
+  idleTriggered = true;
+  focusBeforeEasterEgg = document.activeElement;
+  elements.jumpscare.hidden = false;
+  document.body.classList.add("is-showing-easter-egg");
+  playScream();
+  elements.jumpscareClose.focus();
+}
+
+function closeJumpscare() {
+  elements.jumpscare.hidden = true;
+  document.body.classList.remove("is-showing-easter-egg");
+  focusBeforeEasterEgg?.focus?.();
+}
+
+function resetIdleTimer() {
+  primeAudio();
+  window.clearTimeout(idleTimer);
+  if (idleTriggered) idleTriggered = false;
+  if (!elements.jumpscare.hidden || !elements.musicEasterEgg.hidden) return;
+  idleTimer = window.setTimeout(showJumpscare, IDLE_DELAY);
+}
+
+function showMusicEasterEgg() {
+  window.clearTimeout(idleTimer);
+  focusBeforeEasterEgg = document.activeElement;
+  elements.musicFrame.src = MUSIC_VIDEO_URL;
+  elements.musicEasterEgg.hidden = false;
+  document.body.classList.add("is-showing-easter-egg");
+  elements.musicClose.focus();
+}
+
+function closeMusicEasterEgg() {
+  elements.musicFrame.src = "about:blank";
+  elements.musicEasterEgg.hidden = true;
+  document.body.classList.remove("is-showing-easter-egg");
+  focusBeforeEasterEgg?.focus?.();
+  resetIdleTimer();
+}
+
 elements.chaosReplay.addEventListener("click", startChaosGame);
 elements.chaosClose.addEventListener("click", closeChaosGame);
 elements.chaosResultClose.addEventListener("click", closeChaosGame);
+elements.heartButton.addEventListener("click", toggleCatHeart);
+elements.jumpscareClose.addEventListener("click", closeJumpscare);
+elements.musicClose.addEventListener("click", closeMusicEasterEgg);
+
+["pointerdown", "pointermove", "keydown", "scroll", "wheel", "touchstart"].forEach((eventName) => {
+  document.addEventListener(eventName, resetIdleTimer, { passive: true });
+});
+
+document.addEventListener(
+  "click",
+  (event) => {
+    if (event.target instanceof Element && event.target.closest("#idle-jumpscare, #music-easter-egg")) return;
+    resetIdleTimer();
+    clickCount += 1;
+    if (clickCount === 5) {
+      clickCount = 0;
+      showMusicEasterEgg();
+    }
+  },
+  { capture: true },
+);
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !elements.chaosGame.hidden) closeChaosGame();
+  if (event.key === "Escape" && !elements.jumpscare.hidden) closeJumpscare();
+  if (event.key === "Escape" && !elements.musicEasterEgg.hidden) closeMusicEasterEgg();
+  wakeKeyboardCat(event);
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) elements.keyboardCatVideo.pause();
 });
 
 elements.nextButton.addEventListener("click", () => {
@@ -485,9 +1166,66 @@ elements.shareButton.addEventListener("click", async () => {
   }
 });
 
+function saveBlob(blob, filename) {
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+}
+
+elements.downloadButton.addEventListener("click", async () => {
+  const cat = currentCat;
+  elements.downloadButton.disabled = true;
+  elements.shareFeedback.textContent = "이미지를 준비하는 중입니다…";
+
+  try {
+    const response = await fetch(new URL(cat.image, window.location.href));
+    if (!response.ok) throw new Error(`Image download failed: ${response.status}`);
+
+    const blob = await response.blob();
+    const extension = blob.type === "image/jpeg" ? "jpg" : blob.type.split("/")[1] || "webp";
+    const filename = `${cat.id}.${extension}`;
+    const file = new File([blob], filename, { type: blob.type });
+    const canOpenGalleryMenu =
+      window.matchMedia("(pointer: coarse)").matches && navigator.canShare?.({ files: [file] });
+
+    if (canOpenGalleryMenu) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: cat.title,
+        });
+        elements.shareFeedback.textContent = "이미지 저장 메뉴를 열었습니다.";
+        return;
+      } catch (error) {
+        if (error.name === "AbortError") {
+          elements.shareFeedback.textContent = "이미지 저장을 취소했습니다.";
+          return;
+        }
+      }
+    }
+
+    saveBlob(blob, filename);
+    elements.shareFeedback.textContent = "이미지를 저장했습니다.";
+  } catch (error) {
+    console.error("Image download error:", error);
+    elements.shareFeedback.textContent = "이미지를 저장하지 못했습니다. 잠시 후 다시 시도해주세요.";
+  } finally {
+    elements.downloadButton.disabled = false;
+  }
+});
+
 elements.message.addEventListener("input", () => {
   elements.messageCount.textContent = `${elements.message.value.length} / 200`;
 });
+elements.message.addEventListener("input", maybeTriggerCatWalk);
+elements.nickname.addEventListener("input", maybeTriggerCatWalk);
+elements.message.addEventListener("keydown", handleCatWalkBackspace);
+elements.nickname.addEventListener("keydown", handleCatWalkBackspace);
 
 elements.form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -524,11 +1262,6 @@ elements.form.addEventListener("submit", async (event) => {
 });
 
 window.addEventListener("popstate", () => showCat(getInitialCat(), { updateUrl: false }));
-
-function isAtPageBottom() {
-  const scrollBottom = window.scrollY + window.innerHeight;
-  return document.documentElement.scrollHeight - scrollBottom <= 4;
-}
 
 const fireworksContext = elements.fireworksCanvas.getContext("2d");
 const fireworksColors = ["#ff5938", "#ffd84d", "#5d8cff", "#43d6a2", "#ff70b7", "#ffffff"];
@@ -637,7 +1370,105 @@ window.addEventListener("resize", () => {
   syncFireworksEasterEgg();
 });
 
+createGravityCat();
 elements.catTotal.textContent = `${cats.length}마리의 혼돈 보유 중`;
 showCat(getInitialCat());
+
+function createPixelPet() {
+  const pet = document.createElement("div");
+  pet.className = "pixel-pet";
+  pet.dataset.action = "walk";
+  pet.setAttribute("aria-hidden", "true");
+
+  const sprite = document.createElement("div");
+  sprite.className = "pixel-pet__sprite";
+  pet.append(sprite);
+  document.body.append(pet);
+
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const petSize = () => Number.parseFloat(getComputedStyle(pet).width) || 132;
+  const bounds = () => ({
+    maxX: Math.max(12, window.innerWidth - petSize() - 12),
+    maxY: Math.max(84, window.innerHeight - petSize() - 12),
+  });
+  const clamp = (value, minimum, maximum) => Math.min(Math.max(value, minimum), maximum);
+  const randomBetween = (minimum, maximum) => minimum + Math.random() * (maximum - minimum);
+
+  let x = clamp(window.innerWidth * 0.12, 12, bounds().maxX);
+  let y = clamp(window.innerHeight * 0.68, 84, bounds().maxY);
+  let targetX = x;
+  let targetY = y;
+  let actionEndsAt = 0;
+  let lastFrameAt = performance.now();
+  let restIndex = Math.random() < 0.5 ? 0 : 1;
+
+  function placePet() {
+    pet.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`;
+  }
+
+  function chooseDestination() {
+    const { maxX, maxY } = bounds();
+    targetX = randomBetween(12, maxX);
+    targetY = randomBetween(84, maxY);
+    sprite.style.setProperty("--pet-direction", targetX < x ? -1 : 1);
+    pet.dataset.action = "walk";
+  }
+
+  function startRest(now) {
+    const action = ["lick", "yawn"][restIndex];
+    restIndex = (restIndex + 1) % 2;
+    pet.dataset.action = action;
+    actionEndsAt = now + (action === "lick" ? 3200 : 2800);
+  }
+
+  function animate(now) {
+    const elapsed = Math.min((now - lastFrameAt) / 1000, 0.05);
+    lastFrameAt = now;
+
+    if (!reducedMotion.matches) {
+      if (pet.dataset.action === "walk") {
+        const deltaX = targetX - x;
+        const deltaY = targetY - y;
+        const distance = Math.hypot(deltaX, deltaY);
+        const step = 76 * elapsed;
+
+        if (distance <= step || distance < 1) {
+          x = targetX;
+          y = targetY;
+          startRest(now);
+        } else {
+          x += (deltaX / distance) * step;
+          y += (deltaY / distance) * step;
+        }
+      } else if (now >= actionEndsAt) {
+        chooseDestination();
+      }
+    }
+
+    placePet();
+    window.requestAnimationFrame(animate);
+  }
+
+  window.addEventListener("resize", () => {
+    const { maxX, maxY } = bounds();
+    x = clamp(x, 12, maxX);
+    y = clamp(y, 84, maxY);
+    targetX = clamp(targetX, 12, maxX);
+    targetY = clamp(targetY, 84, maxY);
+    placePet();
+  });
+
+  if (reducedMotion.matches) {
+    pet.dataset.action = "yawn";
+  } else {
+    chooseDestination();
+  }
+  placePet();
+  window.requestAnimationFrame(animate);
+}
+
+createPixelPet();
+resetIdleTimer();
+createRoamingCat();
 resizeFireworksCanvas();
 syncFireworksEasterEgg();
