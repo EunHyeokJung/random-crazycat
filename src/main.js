@@ -52,6 +52,11 @@ const elements = {
   chaosSummary: document.querySelector("#chaos-summary"),
   chaosReplay: document.querySelector("#chaos-replay"),
   chaosResultClose: document.querySelector("#chaos-result-close"),
+  jumpscare: document.querySelector("#idle-jumpscare"),
+  jumpscareClose: document.querySelector("#idle-jumpscare-close"),
+  musicEasterEgg: document.querySelector("#music-easter-egg"),
+  musicClose: document.querySelector("#music-easter-egg-close"),
+  musicFrame: document.querySelector("#music-easter-egg-frame"),
 };
 
 let currentCat = null;
@@ -67,6 +72,14 @@ let chaosScore = 0;
 let chaosSeconds = 10;
 let chaosActive = false;
 let focusBeforeChaos = null;
+let idleTimer = null;
+let idleTriggered = false;
+let clickCount = 0;
+let audioContext = null;
+let focusBeforeEasterEgg = null;
+
+const IDLE_DELAY = 10_000;
+const MUSIC_VIDEO_URL = "https://www.youtube.com/embed/0tOXxuLcaog?autoplay=1&rel=0";
 
 function getInitialCat() {
   const serverSelectedId = document.querySelector('meta[name="selected-cat"]')?.content;
@@ -447,13 +460,98 @@ function closeChaosGame() {
   focusBeforeChaos?.focus?.();
 }
 
+function primeAudio() {
+  if (!audioContext) audioContext = new AudioContext();
+  if (audioContext.state === "suspended") void audioContext.resume();
+}
+
+function playScream() {
+  if (!audioContext || audioContext.state !== "running") return;
+
+  const now = audioContext.currentTime;
+  const oscillator = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  oscillator.type = "sawtooth";
+  oscillator.frequency.setValueAtTime(280, now);
+  oscillator.frequency.exponentialRampToValueAtTime(1450, now + 0.65);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.22, now + 0.05);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.72);
+  oscillator.connect(gain).connect(audioContext.destination);
+  oscillator.start(now);
+  oscillator.stop(now + 0.75);
+}
+
+function showJumpscare() {
+  if (idleTriggered || !elements.jumpscare.hidden) return;
+  idleTriggered = true;
+  focusBeforeEasterEgg = document.activeElement;
+  elements.jumpscare.hidden = false;
+  document.body.classList.add("is-showing-easter-egg");
+  playScream();
+  elements.jumpscareClose.focus();
+}
+
+function closeJumpscare() {
+  elements.jumpscare.hidden = true;
+  document.body.classList.remove("is-showing-easter-egg");
+  focusBeforeEasterEgg?.focus?.();
+}
+
+function resetIdleTimer() {
+  primeAudio();
+  window.clearTimeout(idleTimer);
+  if (idleTriggered) idleTriggered = false;
+  if (!elements.jumpscare.hidden || !elements.musicEasterEgg.hidden) return;
+  idleTimer = window.setTimeout(showJumpscare, IDLE_DELAY);
+}
+
+function showMusicEasterEgg() {
+  window.clearTimeout(idleTimer);
+  focusBeforeEasterEgg = document.activeElement;
+  elements.musicFrame.src = MUSIC_VIDEO_URL;
+  elements.musicEasterEgg.hidden = false;
+  document.body.classList.add("is-showing-easter-egg");
+  elements.musicClose.focus();
+}
+
+function closeMusicEasterEgg() {
+  elements.musicFrame.src = "about:blank";
+  elements.musicEasterEgg.hidden = true;
+  document.body.classList.remove("is-showing-easter-egg");
+  focusBeforeEasterEgg?.focus?.();
+  resetIdleTimer();
+}
+
 elements.chaosStart.addEventListener("click", startChaosGame);
 elements.chaosReplay.addEventListener("click", startChaosGame);
 elements.chaosClose.addEventListener("click", closeChaosGame);
 elements.chaosResultClose.addEventListener("click", closeChaosGame);
+elements.jumpscareClose.addEventListener("click", closeJumpscare);
+elements.musicClose.addEventListener("click", closeMusicEasterEgg);
+
+["pointerdown", "pointermove", "keydown", "scroll", "wheel", "touchstart"].forEach((eventName) => {
+  document.addEventListener(eventName, resetIdleTimer, { passive: true });
+});
+
+document.addEventListener(
+  "click",
+  (event) => {
+    if (event.target instanceof Element && event.target.closest("#idle-jumpscare, #music-easter-egg")) return;
+    resetIdleTimer();
+    clickCount += 1;
+    if (clickCount === 5) {
+      clickCount = 0;
+      showMusicEasterEgg();
+    }
+  },
+  { capture: true },
+);
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !elements.chaosGame.hidden) closeChaosGame();
+  if (event.key === "Escape" && !elements.jumpscare.hidden) closeJumpscare();
+  if (event.key === "Escape" && !elements.musicEasterEgg.hidden) closeMusicEasterEgg();
 });
 
 elements.nextButton.addEventListener("click", () => {
@@ -525,3 +623,4 @@ window.addEventListener("popstate", () => showCat(getInitialCat(), { updateUrl: 
 
 elements.catTotal.textContent = `${cats.length}마리의 혼돈 보유 중`;
 showCat(getInitialCat());
+resetIdleTimer();
