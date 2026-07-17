@@ -9,6 +9,7 @@
   --yellow: #ffd84d;
   --blue: #5d8cff;
   --mint: #67d5a5;
+  --danger: #dc2626;
   --muted: #6f685c;
   --line: 3px solid var(--ink);
   color: var(--ink);
@@ -37,6 +38,21 @@ body {
   background-size: 32px 32px, 38px 38px;
 }
 
+body::after {
+  position: fixed;
+  z-index: 9999;
+  inset: 0;
+  background: var(--danger);
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 80ms linear;
+}
+
+body.admin-login-denied::after {
+  opacity: 0.9;
+}
+
 button,
 input,
 textarea {
@@ -51,6 +67,12 @@ a {
 
 button {
   cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::after {
+    transition: none;
+  }
 }
 
 .skip-link {
