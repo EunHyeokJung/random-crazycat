@@ -636,6 +636,109 @@ body.is-playing-chaos {
   overflow: hidden;
 }
 
+.roaming-cat {
+  position: fixed;
+  z-index: 70;
+  top: 0;
+  left: 0;
+  display: grid;
+  width: clamp(82px, 10vw, 132px);
+  padding: 7px;
+  place-items: center;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  background: var(--yellow);
+  box-shadow: 6px 6px 0 var(--ink);
+  transform:
+    translate(var(--roaming-x, 22px), var(--roaming-y, 120px))
+    rotate(var(--roaming-rotate, 0deg));
+  transition:
+    transform 1.7s cubic-bezier(0.42, 0, 0.18, 1),
+    opacity 240ms ease,
+    scale 240ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+  user-select: none;
+}
+
+.roaming-cat:hover {
+  background: var(--mint);
+  box-shadow: 8px 8px 0 var(--ink);
+}
+
+.roaming-cat:active,
+.roaming-cat.is-pressing {
+  background: var(--orange);
+  scale: 0.93;
+}
+
+.roaming-cat.is-instant {
+  transition-duration: 0ms;
+}
+
+.roaming-cat.is-home {
+  opacity: 0;
+  pointer-events: none;
+  scale: 0.35;
+}
+
+.roaming-cat img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  object-fit: cover;
+  pointer-events: none;
+  transform: scaleX(var(--roaming-direction, 1));
+  user-select: none;
+}
+
+.cat-home-toggle {
+  position: fixed;
+  z-index: 71;
+  right: clamp(14px, 3vw, 28px);
+  bottom: clamp(14px, 3vw, 28px);
+  display: grid;
+  width: clamp(54px, 8vw, 68px);
+  height: clamp(54px, 8vw, 68px);
+  place-items: center;
+  border: var(--line);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 5px 5px 0 var(--ink);
+  color: var(--ink);
+  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.cat-home-toggle:hover,
+.cat-home-toggle.is-waiting {
+  background: var(--mint);
+  transform: translate(-1px, -1px);
+  box-shadow: 7px 7px 0 var(--ink);
+}
+
+.cat-home-toggle:active {
+  transform: translate(3px, 3px);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.cat-home-toggle svg {
+  width: 34px;
+  height: 34px;
+  fill: var(--yellow);
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+}
+
+body.is-playing-chaos .roaming-cat,
+body.is-playing-chaos .cat-home-toggle {
+  display: none;
+}
+
 .chaos-game[hidden],
 .chaos-result[hidden] {
   display: none;
