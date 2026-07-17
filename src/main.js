@@ -612,21 +612,22 @@ function positionChaosCat(target) {
   target.style.setProperty("--chaos-speed", `${0.75 + Math.random() * 0.8}s`);
 }
 
-function refreshChaosCat(target) {
+function refreshChaosCat(target, { reposition = true } = {}) {
   const cat = cats[Math.floor(Math.random() * cats.length)];
   const image = target.querySelector("img");
   image.src = cat.image;
   image.alt = "";
   target.disabled = false;
-  target.classList.remove("is-caught");
+  target.classList.remove("is-caught", "is-moving");
   target.setAttribute("aria-label", `${cat.title} 검거하기`);
-  positionChaosCat(target);
+  if (reposition) positionChaosCat(target);
 }
 
 function catchChaosCat(target) {
   if (!chaosActive || target.disabled) return;
   target.disabled = true;
-  target.classList.add("is-caught");
+  target.classList.add("is-caught", "is-moving");
+  positionChaosCat(target);
   elements.chaosGame.classList.remove("is-hit");
   void elements.chaosGame.offsetWidth;
   elements.chaosGame.classList.add("is-hit");
@@ -641,7 +642,7 @@ function catchChaosCat(target) {
 
   window.setTimeout(() => {
     scoreBurst.remove();
-    if (chaosActive) refreshChaosCat(target);
+    if (chaosActive) refreshChaosCat(target, { reposition: false });
   }, 340);
 
   window.setTimeout(() => elements.chaosGame.classList.remove("is-hit"), 190);
