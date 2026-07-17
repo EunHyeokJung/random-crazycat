@@ -1062,6 +1062,35 @@ body.is-playing-chaos {
   overflow: hidden;
 }
 
+.fireworks-easter-trigger {
+  position: fixed;
+  z-index: 72;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 32px;
+  pointer-events: none;
+}
+
+body.fireworks-easter-ready .fireworks-easter-trigger {
+  pointer-events: auto;
+}
+
+.fireworks-easter-egg {
+  position: fixed;
+  z-index: 70;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+body.fireworks-easter-visible .fireworks-easter-egg {
+  opacity: 1;
+}
+
 .keyboard-cat {
   position: fixed;
   z-index: 40;
