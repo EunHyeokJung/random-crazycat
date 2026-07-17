@@ -632,6 +632,258 @@ footer p {
   margin: 0;
 }
 
+.snack-lab {
+  padding: clamp(48px, 8vw, 88px) 0;
+  border-top: var(--line);
+}
+
+.snack-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+}
+
+.snack-lead {
+  max-width: 690px;
+  margin: 13px 0 0;
+  color: var(--muted);
+  font-weight: 800;
+  line-height: 1.6;
+}
+
+.snack-stamp {
+  flex: 0 0 auto;
+  padding: 10px 14px;
+  border: var(--line);
+  background: var(--yellow);
+  box-shadow: 4px 4px 0 var(--ink);
+  font-size: 0.78rem;
+  font-weight: 900;
+  transform: rotate(3deg);
+}
+
+.snack-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 30px;
+  padding: 18px;
+  border: var(--line);
+  background: #fff;
+  box-shadow: 6px 6px 0 var(--ink);
+}
+
+.snack-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.snack-filter {
+  min-height: 39px;
+  padding: 7px 12px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 900;
+  transition: transform 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.snack-filter:hover,
+.snack-filter.is-active {
+  background: var(--yellow);
+  box-shadow: 3px 3px 0 var(--ink);
+  transform: translate(-1px, -1px);
+}
+
+.button-snack-pick {
+  flex: 0 0 auto;
+  background: var(--mint);
+}
+
+.snack-feedback {
+  min-height: 24px;
+  margin: 22px 0 13px;
+  color: var(--orange-dark);
+  font-weight: 900;
+}
+
+.snack-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.snack-card {
+  --snack-accent: var(--orange);
+  display: flex;
+  min-width: 0;
+  min-height: 365px;
+  flex-direction: column;
+  padding: 20px;
+  border: var(--line);
+  background: #fff;
+  box-shadow: 7px 7px 0 var(--ink);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.snack-card:nth-child(even) {
+  transform: rotate(0.35deg);
+}
+
+.snack-card:hover {
+  box-shadow: 9px 9px 0 var(--ink);
+  transform: translate(-2px, -2px);
+}
+
+.snack-card.is-picked {
+  outline: 6px solid var(--snack-accent);
+  outline-offset: -9px;
+  animation: snack-picked 420ms ease-out;
+}
+
+.snack-card-blue {
+  --snack-accent: var(--blue);
+}
+
+.snack-card-mint {
+  --snack-accent: var(--mint);
+}
+
+.snack-card-yellow {
+  --snack-accent: var(--yellow);
+}
+
+.snack-card-violet {
+  --snack-accent: #b99cff;
+}
+
+.snack-card-pink {
+  --snack-accent: #ff91b6;
+}
+
+.snack-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.snack-maker,
+.snack-type {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 8px;
+  border: 2px solid var(--ink);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.snack-maker {
+  background: var(--snack-accent);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.snack-type {
+  border-style: dashed;
+  color: var(--muted);
+}
+
+.snack-card h3 {
+  margin: 0;
+  font-family: "Fredoka", "Nunito", sans-serif;
+  font-size: 1.22rem;
+  line-height: 1.28;
+  word-break: keep-all;
+}
+
+.snack-description {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.snack-reason {
+  margin: 15px 0;
+  padding: 10px 11px;
+  border-left: 5px solid var(--snack-accent);
+  background: var(--paper);
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+.snack-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.snack-tags span {
+  padding: 4px 7px;
+  border: 1.5px solid var(--ink);
+  background: #fff;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.snack-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  margin-top: auto;
+  padding: 9px 12px;
+  border: 2px solid var(--ink);
+  background: var(--snack-accent);
+  color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  font-size: 0.84rem;
+  font-weight: 900;
+  text-decoration: none;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.snack-link:hover {
+  box-shadow: 5px 5px 0 var(--ink);
+  transform: translate(-1px, -1px);
+}
+
+.snack-notice {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 14px;
+  margin-top: 30px;
+  padding: 17px 19px;
+  border: 2px dashed var(--ink);
+  background: #fff8d4;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.snack-notice strong {
+  color: var(--orange-dark);
+}
+
+.snack-notice p {
+  margin: 0;
+  font-weight: 700;
+}
+
+.snack-notice span {
+  grid-column: 2;
+  color: var(--muted);
+  font-weight: 800;
+}
+
 body.is-playing-chaos {
   overflow: hidden;
 }
@@ -924,6 +1176,12 @@ body.is-playing-chaos {
   }
 }
 
+@keyframes snack-picked {
+  50% {
+    transform: translateY(-8px) rotate(-1deg);
+  }
+}
+
 @media (max-width: 900px) {
   .main-layout {
     grid-template-columns: 1fr;
@@ -944,6 +1202,19 @@ body.is-playing-chaos {
 
   .comments {
     max-height: 480px;
+  }
+
+  .snack-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .button-snack-pick {
+    align-self: flex-start;
+  }
+
+  .snack-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -1065,6 +1336,56 @@ body.is-playing-chaos {
   .comment-meta-actions {
     flex-wrap: wrap;
     justify-content: flex-end;
+  }
+
+  .snack-lab {
+    padding: 45px 0 52px;
+  }
+
+  .snack-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .snack-stamp {
+    align-self: flex-end;
+  }
+
+  .snack-toolbar {
+    padding: 14px;
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+
+  .snack-filters {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .snack-filter:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .button-snack-pick {
+    width: 100%;
+  }
+
+  .snack-list {
+    grid-template-columns: 1fr;
+  }
+
+  .snack-card {
+    min-height: 0;
+    box-shadow: 5px 5px 0 var(--ink);
+    transform: none;
+  }
+
+  .snack-notice {
+    grid-template-columns: 1fr;
+  }
+
+  .snack-notice span {
+    grid-column: 1;
   }
 
   footer {
