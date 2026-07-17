@@ -25,6 +25,7 @@ const elements = {
   title: document.querySelector("#cat-title"),
   number: document.querySelector("#cat-number"),
   photo: document.querySelector("#cat-photo"),
+  photoFrame: document.querySelector(".photo-frame"),
   sticker: document.querySelector("#cat-sticker"),
   caption: document.querySelector("#cat-caption"),
   nextButton: document.querySelector("#next-cat"),
@@ -52,6 +53,9 @@ const elements = {
   chaosSummary: document.querySelector("#chaos-summary"),
   chaosReplay: document.querySelector("#chaos-replay"),
   chaosResultClose: document.querySelector("#chaos-result-close"),
+  colorOptions: [...document.querySelectorAll(".color-option")],
+  customColor: document.querySelector("#custom-cat-color"),
+  colorStatus: document.querySelector("#cat-color-status"),
 };
 
 let currentCat = null;
@@ -67,6 +71,50 @@ let chaosScore = 0;
 let chaosSeconds = 10;
 let chaosActive = false;
 let focusBeforeChaos = null;
+const CAT_COLOR_KEY = "crazy-cat-color";
+let currentColorName = "원래 색";
+
+function saveCatColor(value, name) {
+  try {
+    window.localStorage.setItem(CAT_COLOR_KEY, JSON.stringify({ value, name }));
+  } catch (error) {
+    console.warn("고양이 색상을 저장하지 못했습니다.", error);
+  }
+}
+
+function applyCatColor(value, name, { save = true } = {}) {
+  const isOriginal = value === "original";
+  currentColorName = isOriginal ? "원래 색" : name;
+  elements.photoFrame.classList.toggle("is-colorized", !isOriginal);
+  elements.photoFrame.style.setProperty("--cat-color", isOriginal ? "transparent" : value);
+  elements.colorOptions.forEach((option) => {
+    const selected = option.dataset.catColor === value;
+    option.classList.toggle("is-selected", selected);
+    option.setAttribute("aria-checked", String(selected));
+  });
+  elements.colorStatus.textContent = isOriginal
+    ? "지금은 고양이 본연의 색이에요."
+    : `${name} 색으로 변신했어요!`;
+
+  if (currentCat) {
+    elements.photo.alt = isOriginal ? currentCat.alt : `${currentCat.alt}, ${name} 색 필터 적용`;
+  }
+  if (save) saveCatColor(value, name);
+}
+
+function restoreCatColor() {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(CAT_COLOR_KEY));
+    if (saved?.value && saved?.name) {
+      if (saved.value !== "original") elements.customColor.value = saved.value;
+      applyCatColor(saved.value, saved.name, { save: false });
+      return;
+    }
+  } catch (error) {
+    console.warn("저장된 고양이 색상을 불러오지 못했습니다.", error);
+  }
+  applyCatColor("original", "원래 색", { save: false });
+}
 
 function getInitialCat() {
   const serverSelectedId = document.querySelector('meta[name="selected-cat"]')?.content;
@@ -93,7 +141,9 @@ function showCat(cat, { updateUrl = true } = {}) {
   elements.photo.classList.remove("is-visible");
   elements.photo.onload = () => elements.photo.classList.add("is-visible");
   elements.photo.src = cat.image;
-  elements.photo.alt = cat.alt;
+  elements.photo.alt = elements.photoFrame.classList.contains("is-colorized")
+    ? `${cat.alt}, ${currentColorName} 색 필터 적용`
+    : cat.alt;
   elements.title.textContent = cat.title;
   elements.number.textContent = `#${String(catIndex).padStart(2, "0")}`;
   elements.number.setAttribute("aria-label", `${cats.length}마리 중 ${catIndex}번째 고양이`);
@@ -456,6 +506,19 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !elements.chaosGame.hidden) closeChaosGame();
 });
 
+elements.colorOptions.forEach((option) => {
+  option.addEventListener("click", () => {
+    const { catColor, colorName } = option.dataset;
+    if (catColor !== "original") elements.customColor.value = catColor;
+    applyCatColor(catColor, colorName);
+  });
+});
+
+elements.customColor.addEventListener("input", () => {
+  const color = elements.customColor.value;
+  applyCatColor(color, `직접 고른 ${color.toUpperCase()}`);
+});
+
 elements.nextButton.addEventListener("click", () => {
   showCat(getRandomCat(currentCat.id));
   document.querySelector(".cat-stage").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -524,4 +587,5 @@ elements.form.addEventListener("submit", async (event) => {
 window.addEventListener("popstate", () => showCat(getInitialCat(), { updateUrl: false }));
 
 elements.catTotal.textContent = `${cats.length}마리의 혼돈 보유 중`;
+restoreCatColor();
 showCat(getInitialCat());
