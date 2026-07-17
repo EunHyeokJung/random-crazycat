@@ -52,6 +52,8 @@ const elements = {
   chaosSummary: document.querySelector("#chaos-summary"),
   chaosReplay: document.querySelector("#chaos-replay"),
   chaosResultClose: document.querySelector("#chaos-result-close"),
+  dogEasterEgg: document.querySelector("#dog-easter-egg"),
+  dogEasterEggClose: document.querySelector("#dog-easter-egg-close"),
 };
 
 let currentCat = null;
@@ -67,6 +69,10 @@ let chaosScore = 0;
 let chaosSeconds = 10;
 let chaosActive = false;
 let focusBeforeChaos = null;
+let dogEasterEggDismissed = false;
+let lastPointerY = Number.NEGATIVE_INFINITY;
+
+const DOG_EASTER_EGG_EDGE = 72;
 
 function getInitialCat() {
   const serverSelectedId = document.querySelector('meta[name="selected-cat"]')?.content;
@@ -447,7 +453,57 @@ function closeChaosGame() {
   focusBeforeChaos?.focus?.();
 }
 
-elements.chaosStart.addEventListener("click", startChaosGame);
+function isAtPageBottom() {
+  return window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 4;
+}
+
+function showDogEasterEgg() {
+  if (dogEasterEggDismissed || !elements.chaosGame.hidden) return;
+  elements.dogEasterEgg.inert = false;
+  elements.dogEasterEgg.classList.add("is-visible");
+  elements.dogEasterEgg.setAttribute("aria-hidden", "false");
+}
+
+function hideDogEasterEgg() {
+  elements.dogEasterEgg.inert = true;
+  elements.dogEasterEgg.classList.remove("is-visible");
+  elements.dogEasterEgg.setAttribute("aria-hidden", "true");
+}
+
+function updateDogEasterEgg() {
+  const pointerAtEdge = lastPointerY >= window.innerHeight - DOG_EASTER_EGG_EDGE;
+
+  if (!isAtPageBottom() || !pointerAtEdge) {
+    dogEasterEggDismissed = false;
+    hideDogEasterEgg();
+    return;
+  }
+
+  showDogEasterEgg();
+}
+
+document.addEventListener("mousemove", (event) => {
+  const pointerInsideDog = elements.dogEasterEgg.contains(event.target);
+  lastPointerY = event.clientY;
+
+  if (pointerInsideDog && elements.dogEasterEgg.classList.contains("is-visible")) return;
+  updateDogEasterEgg();
+});
+
+window.addEventListener("scroll", updateDogEasterEgg, { passive: true });
+window.addEventListener("resize", updateDogEasterEgg);
+window.addEventListener("blur", hideDogEasterEgg);
+
+elements.dogEasterEggClose.addEventListener("click", () => {
+  dogEasterEggDismissed = true;
+  hideDogEasterEgg();
+  elements.dogEasterEggClose.blur();
+});
+
+elements.chaosStart.addEventListener("click", () => {
+  hideDogEasterEgg();
+  startChaosGame();
+});
 elements.chaosReplay.addEventListener("click", startChaosGame);
 elements.chaosClose.addEventListener("click", closeChaosGame);
 elements.chaosResultClose.addEventListener("click", closeChaosGame);
