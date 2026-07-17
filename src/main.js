@@ -29,6 +29,7 @@ const elements = {
   caption: document.querySelector("#cat-caption"),
   nextButton: document.querySelector("#next-cat"),
   shareButton: document.querySelector("#share-cat"),
+  downloadButton: document.querySelector("#download-cat"),
   shareFeedback: document.querySelector("#share-feedback"),
   form: document.querySelector("#comment-form"),
   nickname: document.querySelector("#nickname"),
@@ -707,6 +708,59 @@ elements.shareButton.addEventListener("click", async () => {
     if (error.name !== "AbortError") {
       elements.shareFeedback.textContent = "주소를 복사하지 못했습니다. 브라우저 주소를 복사해주세요.";
     }
+  }
+});
+
+function saveBlob(blob, filename) {
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+}
+
+elements.downloadButton.addEventListener("click", async () => {
+  const cat = currentCat;
+  elements.downloadButton.disabled = true;
+  elements.shareFeedback.textContent = "이미지를 준비하는 중입니다…";
+
+  try {
+    const response = await fetch(new URL(cat.image, window.location.href));
+    if (!response.ok) throw new Error(`Image download failed: ${response.status}`);
+
+    const blob = await response.blob();
+    const extension = blob.type === "image/jpeg" ? "jpg" : blob.type.split("/")[1] || "webp";
+    const filename = `${cat.id}.${extension}`;
+    const file = new File([blob], filename, { type: blob.type });
+    const canOpenGalleryMenu =
+      window.matchMedia("(pointer: coarse)").matches && navigator.canShare?.({ files: [file] });
+
+    if (canOpenGalleryMenu) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: cat.title,
+        });
+        elements.shareFeedback.textContent = "이미지 저장 메뉴를 열었습니다.";
+        return;
+      } catch (error) {
+        if (error.name === "AbortError") {
+          elements.shareFeedback.textContent = "이미지 저장을 취소했습니다.";
+          return;
+        }
+      }
+    }
+
+    saveBlob(blob, filename);
+    elements.shareFeedback.textContent = "이미지를 저장했습니다.";
+  } catch (error) {
+    console.error("Image download error:", error);
+    elements.shareFeedback.textContent = "이미지를 저장하지 못했습니다. 잠시 후 다시 시도해주세요.";
+  } finally {
+    elements.downloadButton.disabled = false;
   }
 });
 
