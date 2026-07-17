@@ -611,6 +611,236 @@ textarea:focus {
   line-height: 1.5;
 }
 
+.gravity-cat {
+  position: fixed;
+  z-index: 75;
+  top: max(12px, env(safe-area-inset-top));
+  right: max(14px, env(safe-area-inset-right));
+  display: grid;
+  width: 72px;
+  height: 58px;
+  place-items: center;
+  border: 3px solid var(--ink);
+  border-radius: 48% 48% 42% 42%;
+  background: var(--yellow);
+  box-shadow: 5px 5px 0 var(--ink);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.gravity-cat:hover,
+.gravity-cat:focus-visible {
+  transform: translate(-2px, -2px) rotate(-3deg);
+  box-shadow: 7px 7px 0 var(--ink);
+}
+
+.gravity-cat:active {
+  transform: translate(3px, 3px) rotate(4deg);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.gravity-cat-ear {
+  position: absolute;
+  top: -12px;
+  width: 22px;
+  height: 22px;
+  border: 3px solid var(--ink);
+  background: var(--orange);
+  transform: rotate(45deg);
+}
+
+.gravity-cat-ear-left {
+  left: 13px;
+}
+
+.gravity-cat-ear-right {
+  right: 13px;
+}
+
+.gravity-cat-face {
+  position: relative;
+  display: flex;
+  width: 46px;
+  height: 30px;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.gravity-cat-eye {
+  width: 7px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ink);
+}
+
+.gravity-cat-mouth {
+  position: absolute;
+  right: 18px;
+  bottom: 2px;
+  width: 10px;
+  height: 5px;
+  border-bottom: 3px solid var(--ink);
+  border-radius: 0 0 12px 12px;
+}
+
+.gravity-cat-paw {
+  position: absolute;
+  right: 2px;
+  bottom: 8px;
+  width: 17px;
+  height: 13px;
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  background: #fff;
+  transform-origin: 10% 50%;
+  animation: gravity-paw 1300ms ease-in-out infinite;
+}
+
+.gravity-placeholder {
+  display: inline-block;
+  flex: 0 0 auto;
+  border: 2px dashed rgb(25 24 22 / 45%);
+  background: rgb(255 255 255 / 42%);
+}
+
+.is-gravity-loose {
+  touch-action: none;
+  user-select: none;
+  will-change: left, top, transform;
+}
+
+.is-gravity-draggable {
+  cursor: grab;
+  outline: 3px dashed var(--orange);
+  outline-offset: 5px;
+}
+
+.is-gravity-draggable:active {
+  cursor: grabbing;
+}
+
+.cat-walk-layer {
+  position: fixed;
+  z-index: 95;
+  top: var(--cat-walk-top, calc(100vh - 100px));
+  left: 0;
+  width: 100vw;
+  height: 80px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(28px);
+  transition: opacity 160ms ease, transform 220ms ease;
+}
+
+.cat-walk-layer.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.cat-walk-layer::after {
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  padding: 3px 8px;
+  border: 2px solid var(--ink);
+  background: var(--orange);
+  color: #fff;
+  font-size: 0.74rem;
+  font-weight: 900;
+  content: "HSSS";
+  opacity: 0;
+  transform: translateX(-50%) rotate(-5deg);
+}
+
+.cat-walk-layer.is-hissing::after {
+  opacity: 1;
+  animation: cat-hiss-pop 320ms ease-out;
+}
+
+.cat-walk-silhouette {
+  position: absolute;
+  left: -150px;
+  bottom: 6px;
+  width: 118px;
+  height: 48px;
+  animation: cat-walk-cross 1800ms linear forwards;
+}
+
+.cat-walk-body,
+.cat-walk-head,
+.cat-walk-tail,
+.cat-walk-leg {
+  position: absolute;
+  display: block;
+  background: var(--ink);
+}
+
+.cat-walk-body {
+  left: 30px;
+  bottom: 14px;
+  width: 62px;
+  height: 28px;
+  border-radius: 50% 48% 42% 44%;
+}
+
+.cat-walk-head {
+  right: 5px;
+  bottom: 25px;
+  width: 28px;
+  height: 25px;
+  border-radius: 50%;
+}
+
+.cat-walk-head::before,
+.cat-walk-head::after {
+  position: absolute;
+  top: -7px;
+  width: 12px;
+  height: 12px;
+  background: var(--ink);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  content: "";
+}
+
+.cat-walk-head::before {
+  left: 2px;
+}
+
+.cat-walk-head::after {
+  right: 1px;
+}
+
+.cat-walk-tail {
+  left: 2px;
+  bottom: 30px;
+  width: 38px;
+  height: 10px;
+  border-radius: 999px;
+  transform: rotate(-34deg);
+  transform-origin: right center;
+}
+
+.cat-walk-leg {
+  bottom: 2px;
+  width: 9px;
+  height: 21px;
+  border-radius: 999px;
+  transform-origin: top center;
+}
+
+.cat-walk-leg-one {
+  left: 49px;
+  animation: cat-leg-step 260ms ease-in-out infinite alternate;
+}
+
+.cat-walk-leg-two {
+  left: 74px;
+  animation: cat-leg-step 260ms ease-in-out infinite alternate-reverse;
+}
+
+.is-cat-walked {
+  animation: cat-input-jolt 220ms ease-in-out 2;
+}
+
 .loader {
   width: 28px;
   height: 28px;
@@ -1352,6 +1582,58 @@ body.is-playing-chaos .cat-home-toggle {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes gravity-paw {
+  0%,
+  55%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  70% {
+    transform: rotate(-38deg) translateX(-5px);
+  }
+}
+
+@keyframes cat-walk-cross {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(100vw + 190px));
+  }
+}
+
+@keyframes cat-leg-step {
+  from {
+    transform: rotate(-12deg);
+  }
+  to {
+    transform: rotate(16deg);
+  }
+}
+
+@keyframes cat-input-jolt {
+  45% {
+    box-shadow: 4px 4px 0 var(--orange);
+    transform: translateY(-1px) rotate(-0.5deg);
+  }
+}
+
+@keyframes cat-hiss-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px) rotate(6deg) scale(0.82);
+  }
+  45% {
+    opacity: 1;
+    transform: translate(-50%, -4px) rotate(-5deg) scale(1.08);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -12px) rotate(-7deg) scale(1);
   }
 }
 

@@ -78,6 +78,10 @@ let chaosScore = 0;
 let chaosSeconds = 10;
 let chaosActive = false;
 let focusBeforeChaos = null;
+let gravityCatCooldown = false;
+let catWalkCooldown = false;
+let catWalkActive = false;
+let catWalkTarget = null;
 let keyboardCatIdleTimer = null;
 let keyboardCatAnimationFrame = null;
 
@@ -640,6 +644,292 @@ function closeChaosGame() {
   focusBeforeChaos?.focus?.();
 }
 
+function createGravityCat() {
+  const cat = document.createElement("button");
+  cat.className = "gravity-cat";
+  cat.type = "button";
+  cat.setAttribute("aria-label", "The Gravity Cat");
+  cat.innerHTML = `
+    <span class="gravity-cat-ear gravity-cat-ear-left" aria-hidden="true"></span>
+    <span class="gravity-cat-ear gravity-cat-ear-right" aria-hidden="true"></span>
+    <span class="gravity-cat-face" aria-hidden="true">
+      <span class="gravity-cat-eye"></span>
+      <span class="gravity-cat-eye"></span>
+      <span class="gravity-cat-mouth"></span>
+    </span>
+    <span class="gravity-cat-paw" aria-hidden="true"></span>
+  `;
+  cat.addEventListener("pointerenter", () => knockRandomElement());
+  cat.addEventListener("click", () => knockRandomElement(true));
+  document.body.append(cat);
+}
+
+function getGravityTargets() {
+  return [
+    document.querySelector(".brand"),
+    elements.adminAuth,
+    elements.nextButton,
+    elements.shareButton,
+    elements.chaosStart,
+  ].filter((target) => target && !target.dataset.gravityFalling);
+}
+
+function knockRandomElement(force = false) {
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (prefersReducedMotion || (gravityCatCooldown && !force)) return;
+
+  const targets = getGravityTargets();
+  if (targets.length === 0) return;
+
+  gravityCatCooldown = true;
+  const target = targets[Math.floor(Math.random() * targets.length)];
+  dropElement(target);
+  window.setTimeout(() => {
+    gravityCatCooldown = false;
+  }, 1100);
+}
+
+function dropElement(target) {
+  const rect = target.getBoundingClientRect();
+  const placeholder = document.createElement("span");
+  placeholder.className = "gravity-placeholder";
+  placeholder.style.width = `${rect.width}px`;
+  placeholder.style.height = `${rect.height}px`;
+  placeholder.setAttribute("aria-hidden", "true");
+  target.after(placeholder);
+
+  const original = {
+    parent: placeholder.parentElement,
+    nextSibling: placeholder.nextSibling,
+    placeholder,
+  };
+
+  target.dataset.gravityFalling = "true";
+  target.classList.add("is-gravity-loose");
+  Object.assign(target.style, {
+    position: "fixed",
+    left: `${rect.left}px`,
+    top: `${rect.top}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+    margin: "0",
+    zIndex: "90",
+  });
+  document.body.append(target);
+
+  let x = rect.left;
+  let y = rect.top;
+  let vx = (Math.random() > 0.5 ? 1 : -1) * (1.8 + Math.random() * 2.4);
+  let vy = -3 - Math.random() * 3;
+  let rotation = -10 + Math.random() * 20;
+  let angular = (Math.random() > 0.5 ? 1 : -1) * (4 + Math.random() * 5);
+  let bounces = 0;
+
+  function tick() {
+    if (!target.dataset.gravityFalling) return;
+    const floor = window.innerHeight - rect.height - 10;
+    const rightWall = window.innerWidth - rect.width - 6;
+    vy += 0.55;
+    x += vx;
+    y += vy;
+    rotation += angular;
+
+    if (x <= 6 || x >= rightWall) {
+      x = Math.max(6, Math.min(x, rightWall));
+      vx *= -0.72;
+      angular *= -0.75;
+    }
+
+    if (y >= floor) {
+      y = floor;
+      vy *= -0.42;
+      vx *= 0.72;
+      angular *= 0.7;
+      bounces += 1;
+    }
+
+    target.style.transform = `translate3d(0, 0, 0) rotate(${rotation}deg)`;
+    target.style.left = `${x}px`;
+    target.style.top = `${y}px`;
+
+    if (bounces < 4 || Math.abs(vy) > 1.2 || Math.abs(vx) > 0.35) {
+      window.requestAnimationFrame(tick);
+    } else {
+      makeDraggableLooseElement(target, original, { x, y, rotation });
+    }
+  }
+
+  window.requestAnimationFrame(tick);
+}
+
+function makeDraggableLooseElement(target, original, state) {
+  target.classList.add("is-gravity-draggable");
+  target.title = "Drag me back to my spot";
+
+  const onPointerDown = (event) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    target.setPointerCapture(event.pointerId);
+    const rect = target.getBoundingClientRect();
+    const offsetX = event.clientX - rect.left;
+    const offsetY = event.clientY - rect.top;
+    let lastX = rect.left;
+    let lastY = rect.top;
+
+    const onPointerMove = (moveEvent) => {
+      lastX = moveEvent.clientX - offsetX;
+      lastY = moveEvent.clientY - offsetY;
+      target.style.left = `${lastX}px`;
+      target.style.top = `${lastY}px`;
+      target.style.transform = `rotate(${state.rotation * 0.45}deg)`;
+    };
+
+    const onPointerUp = () => {
+      target.releasePointerCapture(event.pointerId);
+      target.removeEventListener("pointermove", onPointerMove);
+      target.removeEventListener("pointerup", onPointerUp);
+      const slot = original.placeholder.getBoundingClientRect();
+      const current = target.getBoundingClientRect();
+      const closeEnough =
+        Math.abs(current.left - slot.left) < 72 && Math.abs(current.top - slot.top) < 72;
+
+      if (closeEnough) {
+        restoreGravityElement(target, original);
+      } else {
+        state.x = lastX;
+        state.y = lastY;
+      }
+    };
+
+    target.addEventListener("pointermove", onPointerMove);
+    target.addEventListener("pointerup", onPointerUp);
+  };
+
+  target.addEventListener("pointerdown", onPointerDown);
+  target.gravityPointerDown = onPointerDown;
+}
+
+function restoreGravityElement(target, original) {
+  target.classList.remove("is-gravity-loose", "is-gravity-draggable");
+  target.removeAttribute("title");
+  delete target.dataset.gravityFalling;
+  if (target.gravityPointerDown) {
+    target.removeEventListener("pointerdown", target.gravityPointerDown);
+    delete target.gravityPointerDown;
+  }
+  target.removeAttribute("style");
+
+  if (original.nextSibling?.parentElement === original.parent) {
+    original.parent.insertBefore(target, original.nextSibling);
+  } else {
+    original.parent.append(target);
+  }
+
+  original.placeholder.remove();
+  target.animate(
+    [
+      { transform: "translateY(-10px) rotate(-3deg)" },
+      { transform: "translateY(0) rotate(0deg)" },
+    ],
+    { duration: 260, easing: "cubic-bezier(.2,.9,.2,1)" },
+  );
+}
+
+function createCatWalkLayer() {
+  const layer = document.createElement("div");
+  layer.className = "cat-walk-layer";
+  layer.setAttribute("aria-hidden", "true");
+  layer.innerHTML = `
+    <div class="cat-walk-silhouette">
+      <span class="cat-walk-tail"></span>
+      <span class="cat-walk-body"></span>
+      <span class="cat-walk-head"></span>
+      <span class="cat-walk-leg cat-walk-leg-one"></span>
+      <span class="cat-walk-leg cat-walk-leg-two"></span>
+    </div>
+  `;
+  document.body.append(layer);
+  return layer;
+}
+
+function getCatWalkText() {
+  const syllables = ["Meow", "Yowl", "mrrp", "myo", "eww", "mm", "rowl"];
+  const count = 2 + Math.floor(Math.random() * 4);
+  let text = "";
+  for (let index = 0; index < count; index += 1) {
+    text += syllables[Math.floor(Math.random() * syllables.length)];
+  }
+  return text.replace(/[A-Z]/g, (letter) => (Math.random() > 0.45 ? letter.toLowerCase() : letter));
+}
+
+function insertCatWalkText(input, text) {
+  const start = input.selectionStart ?? input.value.length;
+  const end = input.selectionEnd ?? start;
+  const nextValue = `${input.value.slice(0, start)}${text}${input.value.slice(end)}`;
+  const maxLength = Number(input.getAttribute("maxlength")) || nextValue.length;
+  input.value = nextValue.slice(0, maxLength);
+  const nextCaret = Math.min(start + text.length, input.value.length);
+  input.setSelectionRange?.(nextCaret, nextCaret);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function triggerCatWalk(input, force = false) {
+  if (catWalkActive || (catWalkCooldown && !force)) return;
+  if (!input.matches("input, textarea")) return;
+
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  catWalkActive = true;
+  catWalkCooldown = true;
+  catWalkTarget = input;
+  input.classList.add("is-cat-walked");
+
+  const layer = document.querySelector(".cat-walk-layer") || createCatWalkLayer();
+  const silhouette = layer.querySelector(".cat-walk-silhouette");
+  silhouette.style.animation = "none";
+  void silhouette.offsetWidth;
+  silhouette.style.animation = "";
+  layer.classList.add("is-visible");
+
+  const rect = input.getBoundingClientRect();
+  layer.style.setProperty("--cat-walk-top", `${Math.min(window.innerHeight - 92, rect.bottom - 22)}px`);
+
+  window.setTimeout(
+    () => {
+      insertCatWalkText(input, getCatWalkText());
+    },
+    prefersReducedMotion ? 20 : 720,
+  );
+
+  window.setTimeout(
+    () => {
+      layer.classList.remove("is-visible", "is-hissing");
+      input.classList.remove("is-cat-walked");
+      catWalkActive = false;
+      catWalkTarget = null;
+    },
+    prefersReducedMotion ? 120 : 1800,
+  );
+
+  window.setTimeout(() => {
+    catWalkCooldown = false;
+  }, 4200);
+}
+
+function maybeTriggerCatWalk(event) {
+  if (event.inputType?.startsWith("delete")) return;
+  if (Math.random() < 0.12) triggerCatWalk(event.currentTarget);
+}
+
+function handleCatWalkBackspace(event) {
+  if (!catWalkActive || event.key !== "Backspace" || event.currentTarget !== catWalkTarget) return;
+  if (Math.random() < 0.68) {
+    event.preventDefault();
+    const layer = document.querySelector(".cat-walk-layer");
+    layer?.classList.add("is-hissing");
+    window.setTimeout(() => layer?.classList.remove("is-hissing"), 320);
+  }
+}
+
 function isAtPageBottom() {
   return window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 4;
 }
@@ -873,6 +1163,10 @@ elements.downloadButton.addEventListener("click", async () => {
 elements.message.addEventListener("input", () => {
   elements.messageCount.textContent = `${elements.message.value.length} / 200`;
 });
+elements.message.addEventListener("input", maybeTriggerCatWalk);
+elements.nickname.addEventListener("input", maybeTriggerCatWalk);
+elements.message.addEventListener("keydown", handleCatWalkBackspace);
+elements.nickname.addEventListener("keydown", handleCatWalkBackspace);
 
 elements.form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -910,6 +1204,7 @@ elements.form.addEventListener("submit", async (event) => {
 
 window.addEventListener("popstate", () => showCat(getInitialCat(), { updateUrl: false }));
 
+createGravityCat();
 elements.catTotal.textContent = `${cats.length}마리의 혼돈 보유 중`;
 showCat(getInitialCat());
 
