@@ -60,6 +60,9 @@ const elements = {
   chaosSummary: document.querySelector("#chaos-summary"),
   chaosReplay: document.querySelector("#chaos-replay"),
   chaosResultClose: document.querySelector("#chaos-result-close"),
+  hamsterRoamer: document.querySelector("#hamster-roamer"),
+  photoCard: document.querySelector(".photo-card"),
+  siteHeader: document.querySelector(".site-header"),
   snackList: document.querySelector("#snack-list"),
   snackFilters: document.querySelectorAll("[data-snack-filter]"),
   snackPick: document.querySelector("#pick-snack"),
@@ -95,6 +98,73 @@ let chaosScore = 0;
 let chaosSeconds = 10;
 let chaosActive = false;
 let focusBeforeChaos = null;
+let hamsterMoveTimer = null;
+let hamsterX = 0;
+
+const HAMSTER_PADDING = 16;
+const hamsterReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+function clampHamster(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function getHamsterSize() {
+  return clampHamster(window.innerWidth * 0.09, 78, 108);
+}
+
+function getHamsterStartPosition() {
+  const size = getHamsterSize();
+  const card = elements.photoCard.getBoundingClientRect();
+  const maxX = window.innerWidth - size - HAMSTER_PADDING;
+  const maxY = window.innerHeight - size - HAMSTER_PADDING;
+  const fitsOnRight = card.right + size + 18 <= window.innerWidth - HAMSTER_PADDING;
+  const x = fitsOnRight ? card.right + 18 : card.left - size - 18;
+
+  return {
+    x: clampHamster(x, HAMSTER_PADDING, maxX),
+    y: clampHamster(card.top + card.height * 0.2, HAMSTER_PADDING, maxY),
+  };
+}
+
+function getRandomHamsterPosition() {
+  const size = getHamsterSize();
+  const headerBottom = Math.max(HAMSTER_PADDING, elements.siteHeader.getBoundingClientRect().bottom);
+  const minY = clampHamster(headerBottom + 10, HAMSTER_PADDING, window.innerHeight - size);
+  const maxX = Math.max(HAMSTER_PADDING, window.innerWidth - size - HAMSTER_PADDING);
+  const maxY = Math.max(minY, window.innerHeight - size - HAMSTER_PADDING);
+
+  return {
+    x: HAMSTER_PADDING + Math.random() * (maxX - HAMSTER_PADDING),
+    y: minY + Math.random() * (maxY - minY),
+  };
+}
+
+function moveHamster({ x, y }, duration = 0) {
+  hamsterX = x;
+  elements.hamsterRoamer.style.setProperty("--hamster-x", `${Math.round(x)}px`);
+  elements.hamsterRoamer.style.setProperty("--hamster-y", `${Math.round(y)}px`);
+  elements.hamsterRoamer.style.setProperty("--hamster-duration", `${duration}ms`);
+  elements.hamsterRoamer.classList.add("is-visible");
+}
+
+function scheduleHamsterMove(delay = 1200) {
+  window.clearTimeout(hamsterMoveTimer);
+  if (hamsterReducedMotion.matches || document.hidden) return;
+
+  hamsterMoveTimer = window.setTimeout(() => {
+    const duration = 1600 + Math.random() * 1100;
+    const destination = getRandomHamsterPosition();
+    elements.hamsterRoamer.classList.toggle("is-facing-left", destination.x < hamsterX);
+    moveHamster(destination, duration);
+    scheduleHamsterMove(duration + 500 + Math.random() * 900);
+  }, delay);
+}
+
+function startHamsterRoaming() {
+  moveHamster(getHamsterStartPosition());
+  scheduleHamsterMove();
+}
+
 let activeSnackFilter = "all";
 const CAT_COLOR_KEY = "crazy-cat-color";
 let currentColorName = "원래 색";
@@ -1482,6 +1552,18 @@ elements.form.addEventListener("submit", async (event) => {
 });
 
 window.addEventListener("popstate", () => showCat(getInitialCat(), { updateUrl: false }));
+window.addEventListener("resize", () => {
+  window.clearTimeout(hamsterMoveTimer);
+  moveHamster(getHamsterStartPosition(), 300);
+  scheduleHamsterMove(900);
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    window.clearTimeout(hamsterMoveTimer);
+  } else {
+    scheduleHamsterMove(300);
+  }
+});
 
 const fireworksContext = elements.fireworksCanvas.getContext("2d");
 const fireworksColors = ["#ff5938", "#ffd84d", "#5d8cff", "#43d6a2", "#ff70b7", "#ffffff"];
@@ -1595,6 +1677,7 @@ elements.catTotal.textContent = `${cats.length}마리의 혼돈 보유 중`;
 renderSnacks();
 restoreCatColor();
 showCat(getInitialCat());
+window.requestAnimationFrame(startHamsterRoaming);
 
 function createPixelPet() {
   const pet = document.createElement("div");
