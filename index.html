@@ -102,6 +102,50 @@
             <figcaption id="cat-caption">잠시만 기다려주세요.</figcaption>
           </figure>
 
+          <fieldset class="cat-color-picker" aria-describedby="cat-color-status">
+            <legend>
+              <span aria-hidden="true">🎨</span>
+              냥이 컬러 연구소
+            </legend>
+            <div class="color-options" role="radiogroup" aria-label="고양이 색상 프리셋">
+              <button
+                class="color-option is-selected"
+                type="button"
+                role="radio"
+                aria-checked="true"
+                data-cat-color="original"
+                data-color-name="원래 색"
+              >
+                <span class="color-swatch color-swatch-original" aria-hidden="true"></span>
+                원래 색
+              </button>
+              <button class="color-option" type="button" role="radio" aria-checked="false" data-cat-color="#ff5c8a" data-color-name="딸기우유">
+                <span class="color-swatch" style="--swatch: #ff5c8a" aria-hidden="true"></span>
+                딸기우유
+              </button>
+              <button class="color-option" type="button" role="radio" aria-checked="false" data-cat-color="#587bff" data-color-name="소다 파랑">
+                <span class="color-swatch" style="--swatch: #587bff" aria-hidden="true"></span>
+                소다 파랑
+              </button>
+              <button class="color-option" type="button" role="radio" aria-checked="false" data-cat-color="#31c48d" data-color-name="민트 젤리">
+                <span class="color-swatch" style="--swatch: #31c48d" aria-hidden="true"></span>
+                민트 젤리
+              </button>
+              <button class="color-option" type="button" role="radio" aria-checked="false" data-cat-color="#8b5cf6" data-color-name="포도 사탕">
+                <span class="color-swatch" style="--swatch: #8b5cf6" aria-hidden="true"></span>
+                포도 사탕
+              </button>
+            </div>
+            <label class="custom-color">
+              <span>
+                직접 고르기
+                <small>원하는 색을 콕 집어보세요</small>
+              </span>
+              <input id="custom-cat-color" type="color" value="#ff5c8a" aria-label="고양이 색 직접 선택" />
+            </label>
+            <p id="cat-color-status" class="cat-color-status" aria-live="polite">지금은 고양이 본연의 색이에요.</p>
+          </fieldset>
+
           <div class="cat-actions">
             <button id="next-cat" class="button button-primary" type="button">
               <svg viewBox="0 0 24 24" aria-hidden="true">
