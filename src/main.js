@@ -52,6 +52,8 @@ const elements = {
   chaosSummary: document.querySelector("#chaos-summary"),
   chaosReplay: document.querySelector("#chaos-replay"),
   chaosResultClose: document.querySelector("#chaos-result-close"),
+  dogEasterEgg: document.querySelector("#dog-easter-egg"),
+  dogEasterTrigger: document.querySelector("#dog-easter-trigger"),
 };
 
 let currentCat = null;
@@ -523,5 +525,33 @@ elements.form.addEventListener("submit", async (event) => {
 
 window.addEventListener("popstate", () => showCat(getInitialCat(), { updateUrl: false }));
 
+function isAtPageBottom() {
+  const scrollBottom = window.scrollY + window.innerHeight;
+  return document.documentElement.scrollHeight - scrollBottom <= 4;
+}
+
+function hideDogEasterEgg() {
+  document.body.classList.remove("dog-easter-visible");
+  elements.dogEasterEgg.setAttribute("aria-hidden", "true");
+}
+
+function syncDogEasterEgg() {
+  const isReady = isAtPageBottom() && !chaosActive;
+  document.body.classList.toggle("dog-easter-ready", isReady);
+
+  if (!isReady) hideDogEasterEgg();
+}
+
+elements.dogEasterTrigger.addEventListener("pointerenter", () => {
+  if (!isAtPageBottom() || chaosActive) return;
+  document.body.classList.add("dog-easter-visible");
+  elements.dogEasterEgg.setAttribute("aria-hidden", "false");
+});
+
+elements.dogEasterTrigger.addEventListener("pointerleave", hideDogEasterEgg);
+window.addEventListener("scroll", syncDogEasterEgg, { passive: true });
+window.addEventListener("resize", syncDogEasterEgg);
+
 elements.catTotal.textContent = `${cats.length}마리의 혼돈 보유 중`;
 showCat(getInitialCat());
+syncDogEasterEgg();
