@@ -52,8 +52,8 @@ const elements = {
   chaosSummary: document.querySelector("#chaos-summary"),
   chaosReplay: document.querySelector("#chaos-replay"),
   chaosResultClose: document.querySelector("#chaos-result-close"),
-  dogEasterEgg: document.querySelector("#dog-easter-egg"),
-  dogEasterTrigger: document.querySelector("#dog-easter-trigger"),
+  fireworksCanvas: document.querySelector("#fireworks-easter-egg"),
+  fireworksTrigger: document.querySelector("#fireworks-easter-trigger"),
 };
 
 let currentCat = null;
@@ -530,28 +530,114 @@ function isAtPageBottom() {
   return document.documentElement.scrollHeight - scrollBottom <= 4;
 }
 
-function hideDogEasterEgg() {
-  document.body.classList.remove("dog-easter-visible");
-  elements.dogEasterEgg.setAttribute("aria-hidden", "true");
+const fireworksContext = elements.fireworksCanvas.getContext("2d");
+const fireworksColors = ["#ff5938", "#ffd84d", "#5d8cff", "#43d6a2", "#ff70b7", "#ffffff"];
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+let fireworksParticles = [];
+let fireworksFrame = null;
+let fireworksActive = false;
+let lastFireworkAt = 0;
+
+function resizeFireworksCanvas() {
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+  elements.fireworksCanvas.width = Math.round(window.innerWidth * pixelRatio);
+  elements.fireworksCanvas.height = Math.round(window.innerHeight * pixelRatio);
+  fireworksContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
 }
 
-function syncDogEasterEgg() {
+function launchFirework(x = Math.random() * window.innerWidth, y = window.innerHeight * (0.16 + Math.random() * 0.42)) {
+  const color = fireworksColors[Math.floor(Math.random() * fireworksColors.length)];
+  const particleCount = prefersReducedMotion.matches ? 18 : 46;
+
+  for (let index = 0; index < particleCount; index += 1) {
+    const angle = (Math.PI * 2 * index) / particleCount + Math.random() * 0.15;
+    const speed = 2.4 + Math.random() * 4.4;
+    fireworksParticles.push({
+      x,
+      y,
+      velocityX: Math.cos(angle) * speed,
+      velocityY: Math.sin(angle) * speed,
+      alpha: 1,
+      decay: 0.012 + Math.random() * 0.012,
+      size: 1.8 + Math.random() * 2.4,
+      color,
+    });
+  }
+}
+
+function renderFireworks(timestamp) {
+  fireworksContext.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+  if (fireworksActive && !prefersReducedMotion.matches && timestamp - lastFireworkAt > 440) {
+    launchFirework();
+    lastFireworkAt = timestamp;
+  }
+
+  fireworksParticles = fireworksParticles.filter((particle) => particle.alpha > 0);
+  fireworksContext.globalCompositeOperation = "lighter";
+
+  fireworksParticles.forEach((particle) => {
+    particle.x += particle.velocityX;
+    particle.y += particle.velocityY;
+    particle.velocityX *= 0.985;
+    particle.velocityY = particle.velocityY * 0.985 + 0.045;
+    particle.alpha -= particle.decay;
+
+    fireworksContext.beginPath();
+    fireworksContext.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+    fireworksContext.fillStyle = particle.color;
+    fireworksContext.globalAlpha = Math.max(0, particle.alpha);
+    fireworksContext.shadowBlur = 12;
+    fireworksContext.shadowColor = particle.color;
+    fireworksContext.fill();
+  });
+
+  fireworksContext.globalAlpha = 1;
+  fireworksContext.shadowBlur = 0;
+
+  if (fireworksActive || fireworksParticles.length > 0) {
+    fireworksFrame = window.requestAnimationFrame(renderFireworks);
+  } else {
+    fireworksFrame = null;
+  }
+}
+
+function startFireworksEasterEgg() {
+  if (!isAtPageBottom() || chaosActive || fireworksActive) return;
+  fireworksActive = true;
+  document.body.classList.add("fireworks-easter-visible");
+  elements.fireworksCanvas.setAttribute("aria-hidden", "false");
+  resizeFireworksCanvas();
+  launchFirework(window.innerWidth * 0.3, window.innerHeight * 0.38);
+  launchFirework(window.innerWidth * 0.7, window.innerHeight * 0.28);
+  lastFireworkAt = performance.now();
+  if (!fireworksFrame) fireworksFrame = window.requestAnimationFrame(renderFireworks);
+}
+
+function stopFireworksEasterEgg() {
+  fireworksActive = false;
+  fireworksParticles = [];
+  document.body.classList.remove("fireworks-easter-visible");
+  elements.fireworksCanvas.setAttribute("aria-hidden", "true");
+  fireworksContext.clearRect(0, 0, window.innerWidth, window.innerHeight);
+}
+
+function syncFireworksEasterEgg() {
   const isReady = isAtPageBottom() && !chaosActive;
-  document.body.classList.toggle("dog-easter-ready", isReady);
+  document.body.classList.toggle("fireworks-easter-ready", isReady);
 
-  if (!isReady) hideDogEasterEgg();
+  if (!isReady) stopFireworksEasterEgg();
 }
 
-elements.dogEasterTrigger.addEventListener("pointerenter", () => {
-  if (!isAtPageBottom() || chaosActive) return;
-  document.body.classList.add("dog-easter-visible");
-  elements.dogEasterEgg.setAttribute("aria-hidden", "false");
+elements.fireworksTrigger.addEventListener("pointerenter", startFireworksEasterEgg);
+elements.fireworksTrigger.addEventListener("pointerleave", stopFireworksEasterEgg);
+window.addEventListener("scroll", syncFireworksEasterEgg, { passive: true });
+window.addEventListener("resize", () => {
+  resizeFireworksCanvas();
+  syncFireworksEasterEgg();
 });
-
-elements.dogEasterTrigger.addEventListener("pointerleave", hideDogEasterEgg);
-window.addEventListener("scroll", syncDogEasterEgg, { passive: true });
-window.addEventListener("resize", syncDogEasterEgg);
 
 elements.catTotal.textContent = `${cats.length}마리의 혼돈 보유 중`;
 showCat(getInitialCat());
-syncDogEasterEgg();
+resizeFireworksCanvas();
+syncFireworksEasterEgg();

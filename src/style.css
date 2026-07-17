@@ -636,7 +636,7 @@ body.is-playing-chaos {
   overflow: hidden;
 }
 
-.dog-easter-trigger {
+.fireworks-easter-trigger {
   position: fixed;
   z-index: 72;
   right: 0;
@@ -646,66 +646,23 @@ body.is-playing-chaos {
   pointer-events: none;
 }
 
-body.dog-easter-ready .dog-easter-trigger {
+body.fireworks-easter-ready .fireworks-easter-trigger {
   pointer-events: auto;
 }
 
-.dog-easter-egg {
+.fireworks-easter-egg {
   position: fixed;
   z-index: 70;
-  right: clamp(16px, 7vw, 92px);
-  bottom: 10px;
-  width: min(310px, calc(100vw - 32px));
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   opacity: 0;
-  transform: translateY(calc(100% + 30px)) rotate(5deg) scale(0.72);
-  transform-origin: bottom center;
-  transition:
-    opacity 90ms linear,
-    transform 280ms cubic-bezier(0.18, 1.45, 0.38, 1);
+  transition: opacity 120ms ease;
 }
 
-body.dog-easter-visible .dog-easter-egg {
+body.fireworks-easter-visible .fireworks-easter-egg {
   opacity: 1;
-  transform: translateY(0) rotate(-2deg) scale(1);
-}
-
-.dog-easter-card {
-  position: relative;
-  padding: 10px 10px 14px;
-  border: var(--line);
-  background: #fff;
-  box-shadow: 8px 8px 0 var(--ink);
-}
-
-.dog-easter-card img {
-  display: block;
-  width: 100%;
-  max-height: min(48vh, 390px);
-  border: 2px solid var(--ink);
-  object-fit: cover;
-  object-position: center 72%;
-}
-
-.dog-easter-card p {
-  margin: 11px 4px 0;
-  color: var(--ink);
-  font-family: "Fredoka", "Nunito", sans-serif;
-  font-size: 1rem;
-  font-weight: 900;
-  text-align: center;
-}
-
-.dog-easter-tape {
-  position: absolute;
-  z-index: 1;
-  top: -13px;
-  left: 50%;
-  width: 88px;
-  height: 27px;
-  background: rgb(255 216 77 / 86%);
-  clip-path: polygon(4% 4%, 98% 0, 94% 96%, 0 100%);
-  transform: translateX(-50%) rotate(3deg);
 }
 
 .chaos-game[hidden],
@@ -1146,14 +1103,6 @@ body.dog-easter-visible .dog-easter-egg {
     gap: 4px;
   }
 
-  .dog-easter-egg {
-    right: 16px;
-    width: min(250px, calc(100vw - 32px));
-  }
-
-  .dog-easter-card img {
-    max-height: min(42vh, 310px);
-  }
 }
 
 @media (max-width: 350px) {
