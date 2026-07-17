@@ -20,11 +20,13 @@ import { cats } from "./cats.js";
 import { auth, db } from "./firebase.js";
 
 const ADMIN_EMAIL = "silverhyeok.dev@gmail.com";
+const HEARTED_CATS_KEY = "crazycat:hearted-cats";
 
 const elements = {
   title: document.querySelector("#cat-title"),
   number: document.querySelector("#cat-number"),
   photo: document.querySelector("#cat-photo"),
+  heartButton: document.querySelector("#heart-cat"),
   sticker: document.querySelector("#cat-sticker"),
   caption: document.querySelector("#cat-caption"),
   nextButton: document.querySelector("#next-cat"),
@@ -147,6 +149,57 @@ const roamingCatState = {
   y: 0,
 };
 
+function getHeartedCats() {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(HEARTED_CATS_KEY) || "[]");
+    return new Set(Array.isArray(saved) ? saved : []);
+  } catch (error) {
+    console.warn("Could not read hearted cats:", error);
+    return new Set();
+  }
+}
+
+function saveHeartedCats(heartedCats) {
+  try {
+    window.localStorage.setItem(HEARTED_CATS_KEY, JSON.stringify([...heartedCats]));
+  } catch (error) {
+    console.warn("Could not save hearted cats:", error);
+  }
+}
+
+function isCatHearted(catId) {
+  return getHeartedCats().has(catId);
+}
+
+function setHeartUi(isHearted) {
+  elements.heartButton.classList.toggle("is-hearted", isHearted);
+  elements.heartButton.setAttribute("aria-pressed", String(isHearted));
+  elements.heartButton.setAttribute(
+    "aria-label",
+    isHearted ? "Unlike this cat" : "Like this cat",
+  );
+}
+
+function toggleCatHeart() {
+  if (!currentCat) return;
+
+  const heartedCats = getHeartedCats();
+  const nextHearted = !heartedCats.has(currentCat.id);
+
+  if (nextHearted) {
+    heartedCats.add(currentCat.id);
+  } else {
+    heartedCats.delete(currentCat.id);
+  }
+
+  saveHeartedCats(heartedCats);
+  setHeartUi(nextHearted);
+
+  elements.heartButton.classList.remove("is-popping");
+  void elements.heartButton.offsetWidth;
+  elements.heartButton.classList.add("is-popping");
+}
+
 function getInitialCat() {
   const serverSelectedId = document.querySelector('meta[name="selected-cat"]')?.content;
   const requestedId = new URLSearchParams(window.location.search).get("cat") || serverSelectedId;
@@ -178,6 +231,7 @@ function showCat(cat, { updateUrl = true } = {}) {
   elements.number.setAttribute("aria-label", `${cats.length}마리 중 ${catIndex}번째 고양이`);
   elements.sticker.textContent = cat.sticker;
   elements.caption.textContent = cat.caption;
+  setHeartUi(isCatHearted(cat.id));
   elements.shareFeedback.textContent = "";
   elements.formFeedback.textContent = "";
   elements.guestbookFeedback.textContent = "";
@@ -1048,6 +1102,7 @@ function closeMusicEasterEgg() {
 elements.chaosReplay.addEventListener("click", startChaosGame);
 elements.chaosClose.addEventListener("click", closeChaosGame);
 elements.chaosResultClose.addEventListener("click", closeChaosGame);
+elements.heartButton.addEventListener("click", toggleCatHeart);
 elements.jumpscareClose.addEventListener("click", closeJumpscare);
 elements.musicClose.addEventListener("click", closeMusicEasterEgg);
 
