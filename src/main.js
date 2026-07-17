@@ -77,6 +77,7 @@ let commentsLoaded = false;
 let currentUser = null;
 let isAdmin = false;
 let authCheckId = 0;
+let adminDeniedTimer = null;
 let chaosTimer = null;
 let chaosScore = 0;
 let chaosSeconds = 10;
@@ -403,6 +404,16 @@ function setAuthUi(state, user = null) {
   }
 }
 
+function showAdminLoginDeniedEffect() {
+  window.clearTimeout(adminDeniedTimer);
+  document.body.classList.add("admin-login-denied");
+
+  adminDeniedTimer = window.setTimeout(() => {
+    document.body.classList.remove("admin-login-denied");
+    adminDeniedTimer = null;
+  }, 3000);
+}
+
 onAuthStateChanged(auth, async (user) => {
   const checkId = ++authCheckId;
   currentUser = user;
@@ -441,7 +452,14 @@ elements.adminAuth.addEventListener("click", async () => {
 
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
-    await signInWithPopup(auth, provider);
+    const result = await signInWithPopup(auth, provider);
+    const signedInUser = result.user;
+    const signedInAsAdmin =
+      signedInUser.emailVerified && signedInUser.email?.toLowerCase() === ADMIN_EMAIL;
+
+    if (!signedInAsAdmin) {
+      showAdminLoginDeniedEffect();
+    }
   } catch (error) {
     console.error("Firebase Auth error:", error);
     setAuthUi(user ? (isAdmin ? "admin" : "unauthorized") : "signed-out", user);
