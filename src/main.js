@@ -525,3 +525,98 @@ window.addEventListener("popstate", () => showCat(getInitialCat(), { updateUrl: 
 
 elements.catTotal.textContent = `${cats.length}마리의 혼돈 보유 중`;
 showCat(getInitialCat());
+
+function createPixelPet() {
+  const pet = document.createElement("div");
+  pet.className = "pixel-pet";
+  pet.dataset.action = "walk";
+  pet.setAttribute("aria-hidden", "true");
+
+  const sprite = document.createElement("div");
+  sprite.className = "pixel-pet__sprite";
+  pet.append(sprite);
+  document.body.append(pet);
+
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const petSize = () => Number.parseFloat(getComputedStyle(pet).width) || 132;
+  const bounds = () => ({
+    maxX: Math.max(12, window.innerWidth - petSize() - 12),
+    maxY: Math.max(84, window.innerHeight - petSize() - 12),
+  });
+  const clamp = (value, minimum, maximum) => Math.min(Math.max(value, minimum), maximum);
+  const randomBetween = (minimum, maximum) => minimum + Math.random() * (maximum - minimum);
+
+  let x = clamp(window.innerWidth * 0.12, 12, bounds().maxX);
+  let y = clamp(window.innerHeight * 0.68, 84, bounds().maxY);
+  let targetX = x;
+  let targetY = y;
+  let actionEndsAt = 0;
+  let lastFrameAt = performance.now();
+  let restIndex = Math.random() < 0.5 ? 0 : 1;
+
+  function placePet() {
+    pet.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`;
+  }
+
+  function chooseDestination() {
+    const { maxX, maxY } = bounds();
+    targetX = randomBetween(12, maxX);
+    targetY = randomBetween(84, maxY);
+    sprite.style.setProperty("--pet-direction", targetX < x ? -1 : 1);
+    pet.dataset.action = "walk";
+  }
+
+  function startRest(now) {
+    const action = ["lick", "yawn"][restIndex];
+    restIndex = (restIndex + 1) % 2;
+    pet.dataset.action = action;
+    actionEndsAt = now + (action === "lick" ? 3200 : 2800);
+  }
+
+  function animate(now) {
+    const elapsed = Math.min((now - lastFrameAt) / 1000, 0.05);
+    lastFrameAt = now;
+
+    if (!reducedMotion.matches) {
+      if (pet.dataset.action === "walk") {
+        const deltaX = targetX - x;
+        const deltaY = targetY - y;
+        const distance = Math.hypot(deltaX, deltaY);
+        const step = 76 * elapsed;
+
+        if (distance <= step || distance < 1) {
+          x = targetX;
+          y = targetY;
+          startRest(now);
+        } else {
+          x += (deltaX / distance) * step;
+          y += (deltaY / distance) * step;
+        }
+      } else if (now >= actionEndsAt) {
+        chooseDestination();
+      }
+    }
+
+    placePet();
+    window.requestAnimationFrame(animate);
+  }
+
+  window.addEventListener("resize", () => {
+    const { maxX, maxY } = bounds();
+    x = clamp(x, 12, maxX);
+    y = clamp(y, 84, maxY);
+    targetX = clamp(targetX, 12, maxX);
+    targetY = clamp(targetY, 84, maxY);
+    placePet();
+  });
+
+  if (reducedMotion.matches) {
+    pet.dataset.action = "yawn";
+  } else {
+    chooseDestination();
+  }
+  placePet();
+  window.requestAnimationFrame(animate);
+}
+
+createPixelPet();
