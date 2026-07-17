@@ -107,6 +107,12 @@
               </svg>
               이 냥이 공유
             </button>
+            <button id="download-cat" class="button button-secondary" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3v12M7 10l5 5 5-5M5 21h14" />
+              </svg>
+              이미지 저장
+            </button>
             <button id="chaos-game-start" class="button button-chaos" type="button">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M8 17h8M9 17v3h6v-3M10 13h4M8 13l1-6h6l1 6M12 3v2M5.6 5.6l1.5 1.5M18.4 5.6l-1.5 1.5M4 11H2M22 11h-2" />
@@ -203,6 +209,41 @@
       >Bongo Cat · Tenor</a>
     </aside>
 
+    <aside
+      id="dog-easter-egg"
+      class="dog-easter-egg"
+      aria-label="숨어 있던 강아지"
+      aria-hidden="true"
+      inert
+    >
+      <span class="dog-easter-egg-burst" aria-hidden="true">멍?!</span>
+      <button
+        id="dog-easter-egg-close"
+        class="dog-easter-egg-close"
+        type="button"
+        aria-label="강아지 숨기기"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m6 6 12 12M18 6 6 18" />
+        </svg>
+      </button>
+      <figure class="dog-easter-egg-card">
+        <div class="dog-easter-egg-tape" aria-hidden="true"></div>
+        <img
+          src="/dogs/surprise-visitor.jpg"
+          alt="아래에서 불쑥 고개를 내민 장난기 가득한 강아지"
+          width="1122"
+          height="1402"
+          loading="lazy"
+          decoding="async"
+        />
+        <figcaption>
+          <strong>비밀 손님 출몰!</strong>
+          <span>여기 고양이만 있는 줄 알았지?</span>
+        </figcaption>
+      </figure>
+    </aside>
+
     <section
       id="chaos-game"
       class="chaos-game"
@@ -236,6 +277,16 @@
           <button id="chaos-result-close" class="button button-secondary" type="button">현장 복귀</button>
         </div>
       </div>
+    </section>
+
+    <section id="idle-jumpscare" class="easter-egg jumpscare" role="alertdialog" aria-modal="true" aria-label="Surprise" hidden>
+      <img src="/cats/cucumber-shock.webp" alt="A startled cat suddenly fills the screen" />
+      <button id="idle-jumpscare-close" class="easter-egg-close" type="button" aria-label="Close surprise">×</button>
+    </section>
+
+    <section id="music-easter-egg" class="easter-egg music-easter-egg" role="dialog" aria-modal="true" aria-label="Secret music video" hidden>
+      <button id="music-easter-egg-close" class="easter-egg-close" type="button" aria-label="Close music video">×</button>
+      <iframe id="music-easter-egg-frame" title="Secret music video" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
     </section>
 
     <script type="module" src="/src/main.js"></script>
