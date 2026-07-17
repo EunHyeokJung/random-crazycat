@@ -55,6 +55,12 @@ exports.renderPreview = onRequest(
     cors: false,
   },
   (request, response) => {
+    const ua = (request.headers["user-agent"] || "").toLowerCase();
+    if (ua.includes("dog")) {
+      response.status(418).set("Content-Type", "text/plain; charset=utf-8").send("I'm a teapot");
+      return;
+    }
+
     const cat = selectCat(request);
     const html = htmlTemplate
       .replace(/<!-- SOCIAL_META_START -->[\s\S]*?<!-- SOCIAL_META_END -->/, renderSocialMeta(cat))

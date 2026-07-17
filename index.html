@@ -86,10 +86,65 @@
                 decoding="async"
                 fetchpriority="high"
               />
+              <button
+                id="heart-cat"
+                class="heart-cat"
+                type="button"
+                aria-label="Like this cat"
+                aria-pressed="false"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 21s-7.5-4.6-9.4-10.1C1.2 6.9 3.7 3.5 7.4 3.5c2 0 3.6 1.1 4.6 2.7 1-1.6 2.6-2.7 4.6-2.7 3.7 0 6.2 3.4 4.8 7.4C19.5 16.4 12 21 12 21Z" />
+                </svg>
+              </button>
               <span id="cat-sticker" class="photo-sticker">상태 확인 중</span>
             </div>
             <figcaption id="cat-caption">잠시만 기다려주세요.</figcaption>
           </figure>
+
+          <fieldset class="cat-color-picker" aria-describedby="cat-color-status">
+            <legend>
+              <span aria-hidden="true">🎨</span>
+              냥이 컬러 연구소
+            </legend>
+            <div class="color-options" role="radiogroup" aria-label="고양이 색상 프리셋">
+              <button
+                class="color-option is-selected"
+                type="button"
+                role="radio"
+                aria-checked="true"
+                data-cat-color="original"
+                data-color-name="원래 색"
+              >
+                <span class="color-swatch color-swatch-original" aria-hidden="true"></span>
+                원래 색
+              </button>
+              <button class="color-option" type="button" role="radio" aria-checked="false" data-cat-color="#ff5c8a" data-color-name="딸기우유">
+                <span class="color-swatch" style="--swatch: #ff5c8a" aria-hidden="true"></span>
+                딸기우유
+              </button>
+              <button class="color-option" type="button" role="radio" aria-checked="false" data-cat-color="#587bff" data-color-name="소다 파랑">
+                <span class="color-swatch" style="--swatch: #587bff" aria-hidden="true"></span>
+                소다 파랑
+              </button>
+              <button class="color-option" type="button" role="radio" aria-checked="false" data-cat-color="#31c48d" data-color-name="민트 젤리">
+                <span class="color-swatch" style="--swatch: #31c48d" aria-hidden="true"></span>
+                민트 젤리
+              </button>
+              <button class="color-option" type="button" role="radio" aria-checked="false" data-cat-color="#8b5cf6" data-color-name="포도 사탕">
+                <span class="color-swatch" style="--swatch: #8b5cf6" aria-hidden="true"></span>
+                포도 사탕
+              </button>
+            </div>
+            <label class="custom-color">
+              <span>
+                직접 고르기
+                <small>원하는 색을 콕 집어보세요</small>
+              </span>
+              <input id="custom-cat-color" type="color" value="#ff5c8a" aria-label="고양이 색 직접 선택" />
+            </label>
+            <p id="cat-color-status" class="cat-color-status" aria-live="polite">지금은 고양이 본연의 색이에요.</p>
+          </fieldset>
 
           <div class="cat-actions">
             <button id="next-cat" class="button button-primary" type="button">
@@ -106,6 +161,12 @@
                 <path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4" />
               </svg>
               이 냥이 공유
+            </button>
+            <button id="download-cat" class="button button-secondary" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3v12M7 10l5 5 5-5M5 21h14" />
+              </svg>
+              이미지 저장
             </button>
             <button id="chaos-game-start" class="button button-chaos" type="button">
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -234,6 +295,83 @@
       </footer>
     </div>
 
+    <aside id="keyboard-cat" class="keyboard-cat" aria-label="키보드 입력에 반응하는 고양이">
+      <div class="keyboard-cat-label" aria-hidden="true">
+        <span>KEYBOARD CAT</span>
+        <kbd id="keyboard-cat-key">TYPE!</kbd>
+      </div>
+      <video
+        id="keyboard-cat-video"
+        src="/memes/bongo-cat-typing.mp4"
+        muted
+        loop
+        playsinline
+        preload="metadata"
+        aria-hidden="true"
+      ></video>
+      <a
+        class="keyboard-cat-source"
+        href="https://tenor.com/view/bongo-cat-typing-keyboard-smash-gif-17773853"
+        target="_blank"
+        rel="noreferrer"
+      >Bongo Cat · Tenor</a>
+    </aside>
+
+    <aside
+      id="dog-easter-egg"
+      class="dog-easter-egg"
+      aria-label="숨어 있던 강아지"
+      aria-hidden="true"
+      inert
+    >
+      <span class="dog-easter-egg-burst" aria-hidden="true">멍?!</span>
+      <button
+        id="dog-easter-egg-close"
+        class="dog-easter-egg-close"
+        type="button"
+        aria-label="강아지 숨기기"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m6 6 12 12M18 6 6 18" />
+        </svg>
+      </button>
+      <figure class="dog-easter-egg-card">
+        <div class="dog-easter-egg-tape" aria-hidden="true"></div>
+        <img
+          src="/dogs/surprise-visitor.jpg"
+          alt="아래에서 불쑥 고개를 내민 장난기 가득한 강아지"
+          width="1122"
+          height="1402"
+          loading="lazy"
+          decoding="async"
+        />
+        <figcaption>
+          <strong>비밀 손님 출몰!</strong>
+          <span>여기 고양이만 있는 줄 알았지?</span>
+        </figcaption>
+      </figure>
+    </aside>
+
+    <section
+      id="zombie-surprise"
+      class="zombie-surprise"
+      role="dialog"
+      aria-modal="true"
+      aria-label="좀비 깜짝 등장"
+      hidden
+    >
+      <button id="zombie-surprise-close" type="button" aria-label="좀비 화면 닫기">
+        <img
+          src="/zombie-surprise.webp"
+          alt="어둠 속에서 갑자기 가까이 나타난 좀비"
+          width="1535"
+          height="1024"
+          fetchpriority="high"
+        />
+        <span aria-hidden="true">ZOMBIE!</span>
+      </button>
+    </section>
+
     <section
       id="chaos-game"
       class="chaos-game"
@@ -267,6 +405,19 @@
           <button id="chaos-result-close" class="button button-secondary" type="button">현장 복귀</button>
         </div>
       </div>
+    </section>
+
+    <canvas id="fireworks-easter-egg" class="fireworks-easter-egg" aria-hidden="true"></canvas>
+    <div id="fireworks-easter-trigger" class="fireworks-easter-trigger" aria-hidden="true"></div>
+
+    <section id="idle-jumpscare" class="easter-egg jumpscare" role="alertdialog" aria-modal="true" aria-label="Surprise" hidden>
+      <img src="/cats/cucumber-shock.webp" alt="A startled cat suddenly fills the screen" />
+      <button id="idle-jumpscare-close" class="easter-egg-close" type="button" aria-label="Close surprise">×</button>
+    </section>
+
+    <section id="music-easter-egg" class="easter-egg music-easter-egg" role="dialog" aria-modal="true" aria-label="Secret music video" hidden>
+      <button id="music-easter-egg-close" class="easter-egg-close" type="button" aria-label="Close music video">×</button>
+      <iframe id="music-easter-egg-frame" title="Secret music video" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
     </section>
 
     <script type="module" src="/src/main.js"></script>
